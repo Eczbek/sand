@@ -12,6 +12,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <thread>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 #include <xieite/io/file.hpp>
