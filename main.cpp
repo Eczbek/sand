@@ -1,10 +1,10 @@
 #include <array>
 #include <chrono> // IWYU pragma: keep
+#include <climits>
 #include <cstdint>
 #include <fcntl.h>
 #include <filesystem>
 #include <format>
-#include <iterator>
 #include <print>
 #include <stdio.h>
 #include <string>
@@ -324,6 +324,495 @@ namespace sand {
 		"$@      "
 	} };
 
+	constexpr std::uint64_t font_width = 4;
+	constexpr std::uint64_t font_height = 5;
+	constexpr std::array<std::string_view, (1 << CHAR_BIT)> font = ([] {
+		std::array<std::string_view, (1 << CHAR_BIT)> font;
+		for (std::size_t i = 0; i < font.size(); ++i) {
+			font[i] = "####"
+			          "####"
+			          "####"
+			          "####"
+			          "####";
+		}
+		font[' ']  = "    "
+		             "    "
+		             "    "
+		             "    "
+		             "    ";
+		font['!']  = " #  "
+		             " #  "
+		             "    "
+		             " #  "
+		             "    ";
+		font['"']  = "# # "
+		             "# # "
+		             "    "
+		             "    "
+		             "    ";
+		font['#']  = "# # "
+		             "### "
+		             "# # "
+		             "### "
+		             "# # ";
+		font['$']  = " ## "
+		             "##  "
+		             " ## "
+		             "##  "
+		             "    ";
+		font['%']  = "# # "
+		             "  # "
+		             " #  "
+		             "# # "
+		             "    ";
+		font['&']  = " #  "
+		             "# # "
+		             "##  "
+		             "### "
+		             "    ";
+		font['\''] = " #  "
+		             " #  "
+		             "    "
+		             "    "
+		             "    ";
+		font['(']  = "  # "
+		             " #  "
+		             " #  "
+		             "  # "
+		             "    ";
+		font[')']  = "#   "
+		             " #  "
+		             " #  "
+		             "#   "
+		             "    ";
+		font['*']  = "# # "
+		             " #  "
+		             "# # "
+		             "    "
+		             "    ";
+		font['+']  = "    "
+		             " #  "
+		             "### "
+		             " #  "
+		             "    ";
+		font[',']  = "    "
+		             "    "
+		             "    "
+		             " #  "
+		             "#   ";
+		font['-']  = "    "
+		             "    "
+		             "### "
+		             "    "
+		             "    ";
+		font['.']  = "    "
+		             "    "
+		             "    "
+		             " #  "
+		             "    ";
+		font['/']  = "  # "
+		             "  # "
+		             " #  "
+		             "#   "
+		             "    ";
+		font['0']  = " #  "
+		             "# # "
+		             "# # "
+		             " #  "
+		             "    ";
+		font['1']  = " #  "
+		             "##  "
+		             " #  "
+		             "### "
+		             "    ";
+		font['2']  = "##  "
+		             "  # "
+		             " #  "
+		             "### "
+		             "    ";
+		font['3']  = "##  "
+		             "  # "
+		             " ## "
+		             "##  "
+		             "    ";
+		font['4']  = "# # "
+		             "# # "
+		             "### "
+		             "  # "
+		             "    ";
+		font['5']  = "### "
+		             "##  "
+		             "  # "
+		             "##  "
+		             "    ";
+		font['6']  = " ## "
+		             "##  "
+		             "# # "
+		             " #  "
+		             "    ";
+		font['7']  = "### "
+		             "  # "
+		             " #  "
+		             " #  "
+		             "    ";
+		font['8']  = "### "
+		             "### "
+		             "# # "
+		             "### "
+		             "    ";
+		font['9']  = "### "
+		             "# # "
+		             "### "
+		             "  # "
+		             "    ";
+		font[':']  = "    "
+		             " #  "
+		             "    "
+		             " #  "
+		             "    ";
+		font[';']  = "    "
+		             " #  "
+		             "    "
+		             " #  "
+		             "#   ";
+		font['<']  = "    "
+		             "  # "
+		             " #  "
+		             "  # "
+		             "    ";
+		font['=']  = "    "
+		             "### "
+		             "    "
+		             "### "
+		             "    ";
+		font['>']  = "    "
+		             "#   "
+		             " #  "
+		             "#   "
+		             "    ";
+		font['?']  = "##  "
+		             "  # "
+		             "    "
+		             " #  "
+		             "    ";
+		font['@']  = "### "
+		             "# # "
+		             "#   "
+		             "### "
+		             "    ";
+		font['A']  = " #  "
+		             "# # "
+		             "### "
+		             "# # "
+		             "    ";
+		font['B']  = "##  "
+		             "### "
+		             "# # "
+		             "### "
+		             "    ";
+		font['C']  = " ## "
+		             "#   "
+		             "#   "
+		             " ## "
+		             "    ";
+		font['D']  = "##  "
+		             "# # "
+		             "# # "
+		             "##  "
+		             "    ";
+		font['E']  = "### "
+		             "##  "
+		             "#   "
+		             "### "
+		             "    ";
+		font['F']  = "### "
+		             "#   "
+		             "##  "
+		             "#   "
+		             "    ";
+		font['G']  = " ## "
+		             "#   "
+		             "# # "
+		             " ## "
+		             "    ";
+		font['H']  = "# # "
+		             "### "
+		             "# # "
+		             "# # "
+		             "    ";
+		font['I']  = "### "
+		             " #  "
+		             " #  "
+		             "### "
+		             "    ";
+		font['J']  = " ## "
+		             "  # "
+		             "# # "
+		             "### "
+		             "    ";
+		font['K']  = "# # "
+		             "##  "
+		             "# # "
+		             "# # "
+		             "    ";
+		font['L']  = "#   "
+		             "#   "
+		             "#   "
+		             "### "
+		             "    ";
+		font['M']  = "### "
+		             "### "
+		             "# # "
+		             "# # "
+		             "    ";
+		font['N']  = "# # "
+		             "### "
+		             "### "
+		             "# # "
+		             "    ";
+		font['O']  = "### "
+		             "# # "
+		             "# # "
+		             "### "
+		             "    ";
+		font['P']  = "### "
+		             "# # "
+		             "### "
+		             "#   "
+		             "    ";
+		font['Q']  = "### "
+		             "# # "
+		             "# # "
+		             "##  "
+		             "  # ";
+		font['R']  = "### "
+		             "# # "
+		             "##  "
+		             "# # "
+		             "    ";
+		font['S']  = " ## "
+		             "#   "
+		             " ## "
+		             "##  "
+		             "    ";
+		font['T']  = "### "
+		             " #  "
+		             " #  "
+		             " #  "
+		             "    ";
+		font['U']  = "# # "
+		             "# # "
+		             "# # "
+		             "### "
+		             "    ";
+		font['V']  = "# # "
+		             "# # "
+		             "# # "
+		             " #  "
+		             "    ";
+		font['W']  = "# # "
+		             "# # "
+		             "### "
+		             "### "
+		             "    ";
+		font['X']  = "# # "
+		             " #  "
+		             "# # "
+		             "# # "
+		             "    ";
+		font['Y']  = "# # "
+		             "# # "
+		             " #  "
+		             " #  "
+		             "    ";
+		font['Z']  = "### "
+		             "  # "
+		             " #  "
+		             "### "
+		             "    ";
+		font['[']  = " ## "
+		             " #  "
+		             " #  "
+		             " ## "
+		             "    ";
+		font['\\'] = "#   "
+		             "#   "
+		             " #  "
+		             "  # "
+		             "    ";
+		font[']']  = "##  "
+		             " #  "
+		             " #  "
+		             "##  "
+		             "    ";
+		font['^']  = " #  "
+		             "# # "
+		             "    "
+		             "    "
+		             "    ";
+		font['_']  = "    "
+		             "    "
+		             "    "
+		             "### "
+		             "    ";
+		font['`']  = " #  "
+		             "  # "
+		             "    "
+		             "    "
+		             "    ";
+		font['a']  = "    "
+		             " ## "
+		             "# # "
+		             " ## "
+		             "    ";
+		font['b']  = "#   "
+		             "##  "
+		             "# # "
+		             "##  "
+		             "    ";
+		font['c']  = "    "
+		             "### "
+		             "#   "
+		             "### "
+		             "    ";
+		font['d']  = "  # "
+		             " ## "
+		             "# # "
+		             " ## "
+		             "    ";
+		font['e']  = "    "
+		             " ## "
+		             "##  "
+		             " ## "
+		             "    ";
+		font['f']  = " ## "
+		             "#   "
+		             "##  "
+		             "#   "
+		             "    ";
+		font['g']  = "    "
+		             "##  "
+		             "### "
+		             "  # "
+		             "##  ";
+		font['h']  = "#   "
+		             "##  "
+		             "# # "
+		             "# # "
+		             "    ";
+		font['i']  = " #  "
+		             "    "
+		             " #  "
+		             " #  "
+		             "    ";
+		font['j']  = "  # "
+		             "    "
+		             "# # "
+		             " ## "
+		             "    ";
+		font['k']  = "#   "
+		             "# # "
+		             "##  "
+		             "# # "
+		             "    ";
+		font['l']  = " #  "
+		             " #  "
+		             " #  "
+		             "  # "
+		             "    ";
+		font['m']  = "    "
+		             "### "
+		             "### "
+		             "# # "
+		             "    ";
+		font['n']  = "    "
+		             "##  "
+		             "# # "
+		             "# # "
+		             "    ";
+		font['o']  = "    "
+		             "### "
+		             "# # "
+		             "### "
+		             "    ";
+		font['p']  = "    "
+		             "##  "
+		             "# # "
+		             "##  "
+		             "#   ";
+		font['q']  = "    "
+		             " ## "
+		             "# # "
+		             " ## "
+		             "  # ";
+		font['r']  = "    "
+		             " ## "
+		             "#   "
+		             "#   "
+		             "    ";
+		font['s']  = "    "
+		             " ## "
+		             " #  "
+		             "##  "
+		             "    ";
+		font['t']  = " #  "
+		             "### "
+		             " #  "
+		             " #  "
+		             "    ";
+		font['u']  = "    "
+		             "# # "
+		             "# # "
+		             "### "
+		             "    ";
+		font['v']  = "    "
+		             "# # "
+		             "# # "
+		             " #  "
+		             "    ";
+		font['w']  = "    "
+		             "# # "
+		             "### "
+		             "### "
+		             "    ";
+		font['x']  = "    "
+		             "# # "
+		             " #  "
+		             "# # "
+		             "    ";
+		font['y']  = "    "
+		             "# # "
+		             " ## "
+		             "  # "
+		             "##  ";
+		font['z']  = "    "
+		             "##  "
+		             " #  "
+		             " ## "
+		             "    ";
+		font['{']  = "  # "
+		             "##  "
+		             " #  "
+		             "  # "
+		             "    ";
+		font['|']  = " #  "
+		             " #  "
+		             " #  "
+		             " #  "
+		             "    ";
+		font['}']  = "#   "
+		             " #  "
+		             " ## "
+		             "#   "
+		             "    ";
+		font['~']  = "    "
+		             " ## "
+		             "##  "
+		             "    "
+		             "    ";
+		return font;
+	})();
+
 	struct texture {
 		std::uint64_t frames_count = 1;
 		std::uint64_t frame_indices[8];
@@ -605,7 +1094,10 @@ int main() {
 			screen.resize(screen_width * screen_height);
 
 			const auto screen_at = [&](std::uint64_t screen_pixel_x, std::uint64_t screen_pixel_y) -> xieite::color3& {
-				return screen[screen_pixel_y / 2 * screen_width + screen_pixel_x].pixels[!!(screen_pixel_y % 2)];
+				static xieite::color3 dummy;
+				return ((screen_pixel_x < screen_width) && (screen_pixel_y < (screen_height * 2)))
+					? screen[screen_pixel_y / 2 * screen_width + screen_pixel_x].pixels[!!(screen_pixel_y % 2)]
+					: dummy;
 			};
 
 			const auto screen_draw = [&](std::uint64_t texture_index, std::uint64_t chunk_x, std::uint64_t chunk_y, std::uint64_t tile_x, std::uint64_t tile_y) -> void {
@@ -613,13 +1105,8 @@ int main() {
 				const std::uint64_t offset_y = screen_height - sand::texture_height / 2 - ((chunk_y - sand::camera_chunk_y) * sand::chunk_height + tile_y - sand::camera_tile_y) * sand::texture_height;
 				for (std::uint64_t texture_pixel_x = 0; texture_pixel_x < sand::texture_width; ++texture_pixel_x) {
 					for (std::uint64_t texture_pixel_y = 0; texture_pixel_y < sand::texture_height; ++texture_pixel_y) {
-						const std::uint64_t screen_pixel_x = offset_x + texture_pixel_x;
-						const std::uint64_t screen_pixel_y = offset_y + texture_pixel_y;
-						if ((screen_pixel_x >= screen_width) || ((screen_pixel_y / 2) >= screen_height)) {
-							continue;
-						}
 						if (const auto [r, g, b, a] = sand::texture_at(texture_index, texture_pixel_x, texture_pixel_y); a) {
-							screen_at(screen_pixel_x, screen_pixel_y) = xieite::color3(r, g, b);
+							screen_at(offset_x + texture_pixel_x, offset_y + texture_pixel_y) = xieite::color3(r, g, b);
 						}
 					}
 				}
@@ -728,6 +1215,40 @@ int main() {
 				sand::camera_tile_y
 			);
 
+			std::size_t row = 0;
+			std::size_t col = 0;
+			for (char c : std::format(
+				"tick: {:X}\n"
+				"X:    {:X}\n"
+				"Y:    {:X}\n"
+				"x:    {:X}\n"
+				"y:    {:X}\n"
+				"hold: {:X}",
+				sand::tick,
+				static_cast<std::int64_t>(sand::camera_chunk_x),
+				static_cast<std::int64_t>(sand::camera_chunk_y),
+				sand::camera_tile_x,
+				sand::camera_tile_y,
+				sand::selection_index
+			)) {
+				if (c == '\n') {
+					++row;
+					col = 0;
+					continue;
+				}
+				for (std::uint64_t x = 0; x < sand::font_width; ++x) {
+					for (std::uint64_t y = 0; y < sand::font_height; ++y) {
+						if (sand::font[static_cast<std::size_t>(c)][y * sand::font_width + x] == '#') {
+							const std::uint64_t pixel_x = col * sand::font_width + x;
+							const std::uint64_t pixel_y = row * sand::font_height + y;
+							screen_at(pixel_x, pixel_y) = 0xFFFFFFFF;
+							screen_at(pixel_x + 1, pixel_y + 1) = 0x000000;
+						}
+					}
+				}
+				++col;
+			}
+
 			std::string display;
 			if (screen != previous_screen) {
 				const bool skippable = (screen_width == previous_screen_width) && (screen_height == previous_screen_height);
@@ -755,27 +1276,6 @@ int main() {
 				previous_screen = screen;
 			}
 
-			std::format_to(
-				std::back_inserter(display),
-				"\x1B[H\x1B[0m"
-				"tick: {:0>16X}\r\n"
-				"X:    {:0>16X}\r\n"
-				"Y:    {:0>16X}\r\n"
-				"x:    {:0>16X}\r\n"
-				"y:    {:0>16X}\r\n"
-				"hold: {:0>16X}\r\n"
-				"\n"
-				"WASD to move\r\n"
-				"[] to cycle\r\n"
-				"SPACE to interact\r\n"
-				"% to quit",
-				sand::tick,
-				sand::camera_chunk_x,
-				sand::camera_chunk_y,
-				sand::camera_tile_x,
-				sand::camera_tile_y,
-				sand::selection_index
-			);
 			std::print("{}", display);
 			std::fflush(stdout);
 

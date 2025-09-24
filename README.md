@@ -5,3 +5,8 @@ cmake -B build -S . -G Ninja
 cmake --build build
 ./build/sand
 ```
+
+- `W`/`A`/`S`/`D` to move
+- `[`/`]` to cycle
+- SPACE to interact
+- `%` to quit
