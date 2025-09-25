@@ -884,6 +884,16 @@ namespace sand {
 
 	std::unordered_map<std::uint64_t, std::unordered_map<std::uint64_t, std::array<std::array<sand::tile, sand::chunk_height>, sand::chunk_width>>> world;
 
+	struct display_char {
+		xieite::color3 pixels[2];
+
+		[[nodiscard]] friend bool operator==(const sand::display_char&, const sand::display_char&) = default;
+	};
+
+	std::uint64_t screen_width = 0;
+	std::uint64_t screen_height = 0;
+	std::vector<sand::display_char> screen;
+
 	[[nodiscard]] constexpr std::uint64_t parse_u64(std::string_view strv, std::uint64_t& i) noexcept {
 		while (" \n"sv.contains(strv[i])) {
 			++i;
@@ -1033,11 +1043,51 @@ namespace sand {
 		return 0xFF00FFFF;
 	}
 
-	struct display_char {
-		xieite::color3 pixels[2];
+	[[nodiscard]] constexpr bool font_at(char index, std::uint64_t pixel_x, std::uint64_t pixel_y) noexcept {
+		return (pixel_x < sand::font_width) && (pixel_y < sand::font_height) && (sand::font[static_cast<std::size_t>(index)][pixel_y * sand::font_width + pixel_x] == '#');
+	}
 
-		[[nodiscard]] friend bool operator==(const sand::display_char&, const sand::display_char&) = default;
-	};
+	[[nodiscard]] xieite::color3& screen_at(std::uint64_t screen_x, std::uint64_t screen_y) noexcept {
+		static xieite::color3 dummy;
+		return ((screen_x < screen_width) && (screen_y < (screen_height * 2)))
+			? screen[screen_y / 2 * screen_width + screen_x].pixels[!!(screen_y % 2)]
+			: dummy;
+	}
+
+	constexpr void draw_texture(std::uint64_t texture_index, std::uint64_t chunk_x, std::uint64_t chunk_y, std::uint64_t tile_x, std::uint64_t tile_y) noexcept {
+		const std::uint64_t offset_x = sand::screen_width / 2 - sand::texture_width / 2 + ((chunk_x - sand::camera_chunk_x) * sand::chunk_width + tile_x - sand::camera_tile_x) * sand::texture_width;
+		const std::uint64_t offset_y = sand::screen_height - sand::texture_height / 2 - ((chunk_y - sand::camera_chunk_y) * sand::chunk_height + tile_y - sand::camera_tile_y) * sand::texture_height;
+		for (std::uint64_t texture_pixel_x = 0; texture_pixel_x < sand::texture_width; ++texture_pixel_x) {
+			for (std::uint64_t texture_pixel_y = 0; texture_pixel_y < sand::texture_height; ++texture_pixel_y) {
+				if (const auto [r, g, b, a] = sand::texture_at(texture_index, texture_pixel_x, texture_pixel_y); a) {
+					sand::screen_at(offset_x + texture_pixel_x, offset_y + texture_pixel_y) = xieite::color3(r, g, b);
+				}
+			}
+		}
+	}
+
+	constexpr void write_text(std::string_view text, const xieite::color3& fg, const xieite::color3& bg, std::uint64_t screen_x, std::uint64_t screen_y) noexcept {
+		std::uint64_t row = 0;
+		std::uint64_t col = 0;
+		for (char c : text) {
+			if (c == '\n') {
+				++row;
+				col = 0;
+				continue;
+			}
+			for (std::uint64_t x = 0; x < sand::font_width; ++x) {
+				for (std::uint64_t y = 0; y < sand::font_height; ++y) {
+					if (sand::font_at(c, x, y)) {
+						const std::uint64_t pixel_x = screen_x + col * sand::font_width + x;
+						const std::uint64_t pixel_y = screen_y + row * sand::font_height + y;
+						screen_at(pixel_x, pixel_y) = fg;
+						screen_at(pixel_x + 1, pixel_y + 1) = bg;
+					}
+				}
+			}
+			++col;
+		}
+	}
 }
 
 int main() {
@@ -1087,127 +1137,101 @@ int main() {
 		for (;; ++sand::tick) {
 			::winsize screen_size;
 			::ioctl(::fileno(stdin), TIOCGWINSZ, &screen_size);
-			const std::uint64_t screen_width = screen_size.ws_col;
-			const std::uint64_t screen_height = screen_size.ws_row;
+			sand::screen_width = screen_size.ws_col;
+			sand::screen_height = screen_size.ws_row;
 
-			std::vector<sand::display_char> screen;
-			screen.resize(screen_width * screen_height);
-
-			const auto screen_at = [&](std::uint64_t screen_pixel_x, std::uint64_t screen_pixel_y) -> xieite::color3& {
-				static xieite::color3 dummy;
-				return ((screen_pixel_x < screen_width) && (screen_pixel_y < (screen_height * 2)))
-					? screen[screen_pixel_y / 2 * screen_width + screen_pixel_x].pixels[!!(screen_pixel_y % 2)]
-					: dummy;
-			};
-
-			const auto screen_draw = [&](std::uint64_t texture_index, std::uint64_t chunk_x, std::uint64_t chunk_y, std::uint64_t tile_x, std::uint64_t tile_y) -> void {
-				const std::uint64_t offset_x = screen_width / 2 - sand::texture_width / 2 + ((chunk_x - sand::camera_chunk_x) * sand::chunk_width + tile_x - sand::camera_tile_x) * sand::texture_width;
-				const std::uint64_t offset_y = screen_height - sand::texture_height / 2 - ((chunk_y - sand::camera_chunk_y) * sand::chunk_height + tile_y - sand::camera_tile_y) * sand::texture_height;
-				for (std::uint64_t texture_pixel_x = 0; texture_pixel_x < sand::texture_width; ++texture_pixel_x) {
-					for (std::uint64_t texture_pixel_y = 0; texture_pixel_y < sand::texture_height; ++texture_pixel_y) {
-						if (const auto [r, g, b, a] = sand::texture_at(texture_index, texture_pixel_x, texture_pixel_y); a) {
-							screen_at(offset_x + texture_pixel_x, offset_y + texture_pixel_y) = xieite::color3(r, g, b);
-						}
-					}
-				}
-			};
+			sand::screen.clear();
+			sand::screen.resize(sand::screen_width * sand::screen_height);
 
 			for (std::uint64_t chunk_x = 0; chunk_x < 3; ++chunk_x) {
 				for (std::uint64_t chunk_y = 0; chunk_y < 3; ++chunk_y) {
 					for (std::uint64_t tile_x = 0; tile_x < sand::chunk_width; ++tile_x) {
 						for (std::uint64_t tile_y = 0; tile_y < sand::chunk_height; ++tile_y) {
-							screen_draw(sand::world[sand::camera_chunk_x + chunk_x - 1][sand::camera_chunk_y + chunk_y - 1][tile_x][tile_y].texture_index, 0, 0, tile_x, tile_y);
+							sand::draw_texture(sand::world[sand::camera_chunk_x + chunk_x - 1][sand::camera_chunk_y + chunk_y - 1][tile_x][tile_y].texture_index, sand::camera_chunk_x + chunk_x - 1, sand::camera_chunk_y + chunk_y - 1, tile_x, tile_y);
 						}
 					}
 				}
 			}
 
-			// draw cursor segments
-			screen_draw(
-				sand::tiles[sand::selection_index].texture_index,
-				sand::camera_chunk_x,
-				sand::camera_chunk_y,
-				sand::camera_tile_x,
-				sand::camera_tile_y
-			);
-			screen_draw( // top left corner
+			sand::draw_texture(sand::tiles[sand::selection_index].texture_index, sand::camera_chunk_x, sand::camera_chunk_y, sand::camera_tile_x, sand::camera_tile_y);
+			sand::draw_texture( // top left corner
 				0x0E,
 				sand::camera_chunk_x - !sand::camera_tile_x,
 				sand::camera_chunk_y + (sand::camera_tile_y == (sand::chunk_height - 1)),
 				(sand::camera_tile_x - 1 + sand::chunk_width) % sand::chunk_width,
 				(sand::camera_tile_y + 1) % sand::chunk_height
 			);
-			screen_draw( // top left horizontal
+			sand::draw_texture( // top left horizontal
 				0x0F,
 				sand::camera_chunk_x,
 				sand::camera_chunk_y + (sand::camera_tile_y == (sand::chunk_height - 1)),
 				sand::camera_tile_x,
 				(sand::camera_tile_y + 1) % sand::chunk_height
 			);
-			screen_draw( // top left vertical
+			sand::draw_texture( // top left vertical
 				0x10,
 				sand::camera_chunk_x - !sand::camera_tile_x,
 				sand::camera_chunk_y,
 				(sand::camera_tile_x - 1 + sand::chunk_width) % sand::chunk_width,
 				sand::camera_tile_y
 			);
-			screen_draw( // top right corner
+			sand::draw_texture( // top right corner
 				0x11,
 				sand::camera_chunk_x + (sand::camera_tile_x == (sand::chunk_width - 1)),
 				sand::camera_chunk_y + (sand::camera_tile_y == (sand::chunk_height - 1)),
 				(sand::camera_tile_x + 1) % sand::chunk_width,
 				(sand::camera_tile_y + 1) % sand::chunk_height
 			);
-			screen_draw( // top right horizontal
+			sand::draw_texture( // top right horizontal
 				0x12,
 				sand::camera_chunk_x,
 				sand::camera_chunk_y + (sand::camera_tile_y == (sand::chunk_height - 1)),
 				sand::camera_tile_x,
 				(sand::camera_tile_y + 1) % sand::chunk_height
 			);
-			screen_draw( // top right vertical
+			sand::draw_texture( // top right vertical
 				0x13,
 				sand::camera_chunk_x + (sand::camera_tile_x == (sand::chunk_width - 1)),
 				sand::camera_chunk_y,
 				(sand::camera_tile_x + 1) % sand::chunk_width,
 				sand::camera_tile_y
 			);
-			screen_draw( // bottom left corner
+			sand::draw_texture( // bottom left corner
 				0x14,
 				sand::camera_chunk_x - !sand::camera_tile_x,
 				sand::camera_chunk_y - !sand::camera_tile_y,
 				(sand::camera_tile_x - 1 + sand::chunk_width) % sand::chunk_width,
 				(sand::camera_tile_y - 1 + sand::chunk_height) % sand::chunk_height
 			);
-			screen_draw( // bottom left horizontal
+			sand::draw_texture( // bottom left horizontal
 				0x15,
 				sand::camera_chunk_x,
 				sand::camera_chunk_y - !sand::camera_tile_y,
 				sand::camera_tile_x,
 				(sand::camera_tile_y - 1 + sand::chunk_height) % sand::chunk_height
 			);
-			screen_draw( // bottom left vertical
+			sand::draw_texture( // bottom left vertical
 				0x16,
 				sand::camera_chunk_x - !sand::camera_tile_x,
 				sand::camera_chunk_y,
 				(sand::camera_tile_x - 1 + sand::chunk_width) % sand::chunk_width,
 				sand::camera_tile_y
 			);
-			screen_draw( // bottom right corner
+			sand::draw_texture( // bottom right corner
 				0x17,
 				sand::camera_chunk_x + (sand::camera_tile_x == (sand::chunk_width - 1)),
 				sand::camera_chunk_y - !sand::camera_tile_y,
 				(sand::camera_tile_x + 1) % sand::chunk_width,
 				(sand::camera_tile_y - 1 + sand::chunk_height) % sand::chunk_height
 			);
-			screen_draw( // bottom right horizontal
+			sand::draw_texture( // bottom right horizontal
 				0x18,
 				sand::camera_chunk_x,
 				sand::camera_chunk_y - !sand::camera_tile_y,
 				sand::camera_tile_x,
 				(sand::camera_tile_y - 1 + sand::chunk_height) % sand::chunk_height
 			);
-			screen_draw( // bottom right vertical
+			sand::draw_texture( // bottom right vertical
 				0x19,
 				sand::camera_chunk_x + (sand::camera_tile_x == (sand::chunk_width - 1)),
 				sand::camera_chunk_y,
@@ -1215,9 +1239,7 @@ int main() {
 				sand::camera_tile_y
 			);
 
-			std::size_t row = 0;
-			std::size_t col = 0;
-			for (char c : std::format(
+			sand::write_text(std::format(
 				"tick: {:X}\n"
 				"X:    {:X}\n"
 				"Y:    {:X}\n"
@@ -1230,33 +1252,16 @@ int main() {
 				sand::camera_tile_x,
 				sand::camera_tile_y,
 				sand::selection_index
-			)) {
-				if (c == '\n') {
-					++row;
-					col = 0;
-					continue;
-				}
-				for (std::uint64_t x = 0; x < sand::font_width; ++x) {
-					for (std::uint64_t y = 0; y < sand::font_height; ++y) {
-						if (sand::font[static_cast<std::size_t>(c)][y * sand::font_width + x] == '#') {
-							const std::uint64_t pixel_x = col * sand::font_width + x;
-							const std::uint64_t pixel_y = row * sand::font_height + y;
-							screen_at(pixel_x, pixel_y) = 0xFFFFFFFF;
-							screen_at(pixel_x + 1, pixel_y + 1) = 0x000000;
-						}
-					}
-				}
-				++col;
-			}
+			), 0xFFFFFF, 0x000000, 0, 0);
 
 			std::string display;
-			if (screen != previous_screen) {
-				const bool skippable = (screen_width == previous_screen_width) && (screen_height == previous_screen_height);
-				previous_screen.resize(screen.size());
-				for (std::uint64_t pixel_y = 0; pixel_y < screen_height; ++pixel_y) {
-					for (std::uint64_t pixel_x = 0; pixel_x < screen_width; ++pixel_x) {
-						const std::uint64_t index = pixel_y * screen_width + pixel_x;
-						if (skippable && (screen[index] == previous_screen[index])) {
+			if (sand::screen != previous_screen) {
+				const bool skippable = (sand::screen_width == previous_screen_width) && (sand::screen_height == previous_screen_height);
+				previous_screen.resize(sand::screen.size());
+				for (std::uint64_t pixel_y = 0; pixel_y < sand::screen_height; ++pixel_y) {
+					for (std::uint64_t pixel_x = 0; pixel_x < sand::screen_width; ++pixel_x) {
+						const std::uint64_t pixel_index = pixel_y * sand::screen_width + pixel_x;
+						if (skippable && (sand::screen[pixel_index] == previous_screen[pixel_index])) {
 							continue;
 						}
 						std::format_to(
@@ -1264,16 +1269,16 @@ int main() {
 							"\x1B[{};{}H\x1B[38;2;{};{};{}m\x1B[48;2;{};{};{}m▀\x1B[0m",
 							pixel_y + 1,
 							pixel_x + 1,
-							screen[index].pixels[0].r,
-							screen[index].pixels[0].g,
-							screen[index].pixels[0].b,
-							screen[index].pixels[1].r,
-							screen[index].pixels[1].g,
-							screen[index].pixels[1].b
+							sand::screen[pixel_index].pixels[0].r,
+							sand::screen[pixel_index].pixels[0].g,
+							sand::screen[pixel_index].pixels[0].b,
+							sand::screen[pixel_index].pixels[1].r,
+							sand::screen[pixel_index].pixels[1].g,
+							sand::screen[pixel_index].pixels[1].b
 						);
 					}
 				}
-				previous_screen = screen;
+				previous_screen = sand::screen;
 			}
 
 			std::print("{}", display);
@@ -1324,41 +1329,43 @@ int main() {
 		}
 	}
 
-	auto file = xieite::file("save.txt", "w");
-	std::println(
-		file.get(),
-		"{:X} {:X} {:X} {:X} {:X} {:X} {:X} {:X} {:X} {:X}",
-		sand::tick,
-		sand::camera_chunk_x,
-		sand::camera_chunk_y,
-		sand::camera_tile_x,
-		sand::camera_tile_y,
-		sand::selection_index,
-		sand::camera_chunk_x,
-		sand::camera_chunk_y,
-		sand::camera_tile_x,
-		sand::camera_tile_y
-	);
-	for (auto&& [chunk_x, chunks_column] : sand::world) {
-		for (auto&& [chunk_y, chunk] : chunks_column) {
-			if (([&] -> bool {
-				for (auto&& tiles_column : chunk) {
-					for (auto&& tile : tiles_column) {
-						if (tile != sand::tiles[0]) {
-							return false;
+	{
+		auto file = xieite::file("save.txt", "w");
+		std::println(
+			file.get(),
+			"{:X} {:X} {:X} {:X} {:X} {:X} {:X} {:X} {:X} {:X}",
+			sand::tick,
+			sand::camera_chunk_x,
+			sand::camera_chunk_y,
+			sand::camera_tile_x,
+			sand::camera_tile_y,
+			sand::selection_index,
+			sand::camera_chunk_x,
+			sand::camera_chunk_y,
+			sand::camera_tile_x,
+			sand::camera_tile_y
+		);
+		for (auto&& [chunk_x, chunks_column] : sand::world) {
+			for (auto&& [chunk_y, chunk] : chunks_column) {
+				if (([&] -> bool {
+					for (auto&& tiles_column : chunk) {
+						for (auto&& tile : tiles_column) {
+							if (tile != sand::tiles[0]) {
+								return false;
+							}
 						}
 					}
+					return true;
+				})()) {
+					continue;
 				}
-				return true;
-			})()) {
-				continue;
-			}
-			std::println(file.get(), "{:X} {:X}", chunk_x, chunk_y);
-			for (std::uint64_t tile_y = sand::chunk_height; tile_y--;) {
-				for (std::uint64_t tile_x = 0; tile_x < (sand::chunk_width - 1); ++tile_x) {
-					std::print(file.get(), "{:0>2X} ", sand::world[chunk_x][chunk_y][tile_x][tile_y].texture_index);
+				std::println(file.get(), "{:X} {:X}", chunk_x, chunk_y);
+				for (std::uint64_t tile_y = sand::chunk_height; tile_y--;) {
+					for (std::uint64_t tile_x = 0; tile_x < (sand::chunk_width - 1); ++tile_x) {
+						std::print(file.get(), "{:0>2X} ", sand::world[chunk_x][chunk_y][tile_x][tile_y].texture_index);
+					}
+					std::println(file.get(), "{:0>2X}", sand::world[chunk_x][chunk_y][sand::chunk_width - 1][tile_y].texture_index);
 				}
-				std::println(file.get(), "{:0>2X}", sand::world[chunk_x][chunk_y][sand::chunk_width - 1][tile_y].texture_index);
 			}
 		}
 	}
