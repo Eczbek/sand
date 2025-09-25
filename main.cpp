@@ -1143,11 +1143,13 @@ int main() {
 			sand::screen.clear();
 			sand::screen.resize(sand::screen_width * sand::screen_height);
 
-			for (std::uint64_t chunk_x = 0; chunk_x < 3; ++chunk_x) {
-				for (std::uint64_t chunk_y = 0; chunk_y < 3; ++chunk_y) {
+			for (std::uint64_t view_chunk_x = 0; view_chunk_x < 3; ++view_chunk_x) {
+				for (std::uint64_t view_chunk_y = 0; view_chunk_y < 3; ++view_chunk_y) {
 					for (std::uint64_t tile_x = 0; tile_x < sand::chunk_width; ++tile_x) {
 						for (std::uint64_t tile_y = 0; tile_y < sand::chunk_height; ++tile_y) {
-							sand::draw_texture(sand::world[sand::camera_chunk_x + chunk_x - 1][sand::camera_chunk_y + chunk_y - 1][tile_x][tile_y].texture_index, sand::camera_chunk_x + chunk_x - 1, sand::camera_chunk_y + chunk_y - 1, tile_x, tile_y);
+							const std::uint64_t chunk_x = sand::camera_chunk_x + view_chunk_x - 1;
+							const std::uint64_t chunk_y = sand::camera_chunk_y + view_chunk_y - 1;
+							sand::draw_texture(sand::world[chunk_x][chunk_y][tile_x][tile_y].texture_index, chunk_x, chunk_y, tile_x, tile_y);
 						}
 					}
 				}
