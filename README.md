@@ -8,5 +8,5 @@ cmake --build build
 
 - `W`/`A`/`S`/`D` to move
 - `[`/`]` to cycle
-- SPACE to interact
+- ENTER to interact
 - `%` to quit

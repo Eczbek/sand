@@ -423,7 +423,7 @@ int main() {
 				case ']':
 					++sand::select %= sand::tiles.size();
 					break;
-				case ' ':
+				case '\r':
 					sand::world[sand::camera_pos.chunk.x][sand::camera_pos.chunk.y][sand::camera_pos.tile.x][sand::camera_pos.tile.y] = sand::tiles[sand::select];
 					break;
 				case 'D':
