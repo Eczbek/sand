@@ -1,10 +1,10 @@
 #ifndef SAND_HEADER_GET_COLOR
 #	define SAND_HEADER_GET_COLOR
 #
-#	include <xieite/math/color4.hpp>
+#	include "color.hpp"
 
 namespace sand {
-	[[nodiscard]] constexpr xieite::color4 get_color(char c) noexcept {
+	[[nodiscard]] constexpr sand::color4 get_color(char c) noexcept {
 		switch (c) {
 		case ' ':
 			return 0x00000000;

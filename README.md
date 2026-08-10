@@ -1,12 +1,12 @@
 ```bash
 git clone https://github.com/Eczbek/sand
 cd sand
-cmake -B build -S . -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+cmake -B build -S . -G Ninja
 cmake --build build
 ./build/sand
 ```
 
 - `W`/`A`/`S`/`D` to move
-- `[`/`]` to cycle
-- ENTER to interact
-- `%` to quit
+- `[`/`]` to select tile
+- ENTER to place tile
+- `%` to save and quit

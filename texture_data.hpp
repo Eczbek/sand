@@ -1,15 +1,16 @@
 #ifndef SAND_HEADER_TEXTURE_DATA
 #	define SAND_HEADER_TEXTURE_DATA
 #
-#	include <array>
-#	include <cstdint>
-#	include <string_view>
+#	include <xte/data/string_view.hpp>
+#	include <xte/util/number_types.hpp>
+#
+#	include <meta>
 
 namespace sand {
-	inline constexpr std::uint64_t texture_width = 8;
-	inline constexpr std::uint64_t texture_height = 8;
-	inline constexpr std::array<std::string_view, 0x21> texture_data = { {
-		"        " // 00 void
+	inline constexpr xte::u64 texture_w = 8;
+	inline constexpr xte::u64 texture_h = 8;
+	inline constexpr auto texture_data = std::define_static_array(typename[:^^xte::string_view[]:] {
+		"        " // 0x00: empty
 		"        "
 		"        "
 		"        "
@@ -18,7 +19,7 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"22222222" // 01 stone
+		"22222222" // 0x01: stone
 		"25554432"
 		"24545441"
 		"24444331"
@@ -27,7 +28,7 @@ namespace sand {
 		"13433331"
 		"11111111"
 		,
-		"14325413" // 02 cobble
+		"14325413" // 0x02: cobble
 		"32142521"
 		"15433254"
 		"52321143"
@@ -36,7 +37,7 @@ namespace sand {
 		"14112542"
 		"25431424"
 		,
-		"        " // 03 cursor (top left corner)
+		"        " // 0x03: cursor (top left corner)
 		"        "
 		"        "
 		"        "
@@ -45,7 +46,7 @@ namespace sand {
 		"      99"
 		"      ^$"
 		,
-		"        " // 04 cursor (top left horizontal)
+		"        " // 0x04: cursor (top left horizontal)
 		"        "
 		"        "
 		"        "
@@ -54,7 +55,7 @@ namespace sand {
 		"9^      "
 		"@@      "
 		,
-		"llll...." // 05 blue (dark)
+		"llll...." // 0x05: blue (dark)
 		"llll...."
 		"llll...."
 		"llll...."
@@ -63,7 +64,7 @@ namespace sand {
 		"....llll"
 		"....llll"
 		,
-		"llll<<<<" // 06 blue (light)
+		"llll<<<<" // 0x06: blue (light)
 		"llll<<<<"
 		"llll<<<<"
 		"llll<<<<"
@@ -72,7 +73,7 @@ namespace sand {
 		"<<<<llll"
 		"<<<<llll"
 		,
-		"asdfbk<;" // 07 rainbow (frame 0)
+		"asdfbk<;" // 0x07: rainbow (frame 0)
 		"sdfbk<;a"
 		"dfbk<;as"
 		"fbk<;asd"
@@ -81,7 +82,7 @@ namespace sand {
 		"<;asdfbk"
 		";asdfbk<"
 		,
-		"QWETEREW" // 08 dirt
+		"QWETEREW" // 0x08: dirt
 		"WERQWETE"
 		"ETWERTET"
 		"WERTEWQW"
@@ -90,7 +91,7 @@ namespace sand {
 		"WQRWEWET"
 		"ETERTERT"
 		,
-		"35243214" // 09 rock
+		"35243214" // 0x09: rock
 		"23435345"
 		"35543532"
 		"43355442"
@@ -99,7 +100,7 @@ namespace sand {
 		"43355434"
 		"12424523"
 		,
-		"BNHBNbGH" // 0A leaves
+		"BNHBNbGH" // 0x0A: leaves
 		"NgbNHGBN"
 		"BbGBNNGH"
 		"HGBHBNHB"
@@ -108,7 +109,7 @@ namespace sand {
 		"bGHGBGBH"
 		"GBNNGBHB"
 		,
-		"QEETWRQR" // 0B wood
+		"QEETWRQR" // 0x0B: wood
 		"QRWEWTWE"
 		"WRQRETER"
 		"ETWEERWE"
@@ -117,7 +118,7 @@ namespace sand {
 		"WREQETET"
 		"ETWQTEWE"
 		,
-		"GNGbHgHB" // 0C grass
+		"GNGbHgHB" // 0x0C: grass
 		"gHBbGNBG"
 		"NBGGBNGg"
 		"NBgHBGBb"
@@ -126,7 +127,7 @@ namespace sand {
 		"BGBgNBNG"
 		"NGNbGNHB"
 		,
-		"cdxkfknh" // 0D flowers
+		"cdxkfknh" // 0x0D: flowers
 		"dfs,AaAf"
 		"xsxNafzh"
 		"zA,kAzAZ"
@@ -135,7 +136,7 @@ namespace sand {
 		"JdfdNxsc"
 		"mcsxk,jf"
 		,
-		"      ^$" // 0E cursor (top left vertical)
+		"      ^$" // 0x0E: cursor (top left vertical)
 		"      $@"
 		"        "
 		"        "
@@ -144,7 +145,7 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"        " // 0F cursor (top right corner)
+		"        " // 0x0F: cursor (top right corner)
 		"        "
 		"        "
 		"        "
@@ -153,7 +154,7 @@ namespace sand {
 		"9^      "
 		"^$      "
 		,
-		"{[[]]{[]" // 10 ice
+		"{[[]]{[]" // 0x10: ice
 		"[[]{[]]}"
 		"{][]][{}"
 		"][{][{{]"
@@ -162,7 +163,7 @@ namespace sand {
 		"}]{]{}[{"
 		"{}{}}{}}"
 		,
-		"[[[[[[[{" // 11 chiseled ice
+		"[[[[[[[{" // 0x11: chiseled ice
 		"[{{{{{]}"
 		"[{]]]][}"
 		"[{]]]][}"
@@ -171,7 +172,7 @@ namespace sand {
 		"[][[[[[}"
 		"{}}}}}}}"
 		,
-		"sdfbk<;a" // 12 rainbow (frame 1)
+		"sdfbk<;a" // 0x12: rainbow (frame 1)
 		"dfbk<;as"
 		"fbk<;asd"
 		"bk<;asdf"
@@ -180,7 +181,7 @@ namespace sand {
 		";asdfbk<"
 		"asdfbk<;"
 		,
-		"dfbk<;as" // 13 rainbow (frame 2)
+		"dfbk<;as" // 0x13: rainbow (frame 2)
 		"fbk<;asd"
 		"bk<;asdf"
 		"k<;asdfb"
@@ -189,7 +190,7 @@ namespace sand {
 		"asdfbk<;"
 		"sdfbk<;a"
 		,
-		"fbk<;asd" // 14 rainbow (frame 3)
+		"fbk<;asd" // 0x14: rainbow (frame 3)
 		"bk<;asdf"
 		"k<;asdfb"
 		"<;asdfbk"
@@ -198,7 +199,7 @@ namespace sand {
 		"sdfbk<;a"
 		"dfbk<;as"
 		,
-		"bk<;asdf" // 15 rainbow (frame 4)
+		"bk<;asdf" // 0x15: rainbow (frame 4)
 		"k<;asdfb"
 		"<;asdfbk"
 		";asdfbk<"
@@ -207,7 +208,7 @@ namespace sand {
 		"dfbk<;as"
 		"fbk<;asd"
 		,
-		"k<;asdfb" // 16 rainbow (frame 5)
+		"k<;asdfb" // 0x16: rainbow (frame 5)
 		"<;asdfbk"
 		";asdfbk<"
 		"asdfbk<;"
@@ -216,7 +217,7 @@ namespace sand {
 		"fbk<;asd"
 		"bk<;asdf"
 		,
-		"<;asdfbk" // 17 rainbow (frame 6)
+		"<;asdfbk" // 0x17: rainbow (frame 6)
 		";asdfbk<"
 		"asdfbk<;"
 		"sdfbk<;a"
@@ -225,7 +226,7 @@ namespace sand {
 		"bk<;asdf"
 		"k<;asdfb"
 		,
-		";asdfbk<" // 18 rainbow (frame 7)
+		";asdfbk<" // 0x18: rainbow (frame 7)
 		"asdfbk<;"
 		"sdfbk<;a"
 		"dfbk<;as"
@@ -234,7 +235,7 @@ namespace sand {
 		"k<;asdfb"
 		"<;asdfbk"
 		,
-		"        " // 19 cursor (top right horizontal)
+		"        " // 0x19: cursor (top right horizontal)
 		"        "
 		"        "
 		"        "
@@ -243,7 +244,7 @@ namespace sand {
 		"      99"
 		"      ^$"
 		,
-		"9$      " // 1A cursor (top right vertical)
+		"9$      " // 0x1A: cursor (top right vertical)
 		"^@      "
 		"        "
 		"        "
@@ -252,7 +253,7 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"      $^" // 1B cursor (bottom left corner)
+		"      $^" // 0x1B: cursor (bottom left corner)
 		"      @@"
 		"        "
 		"        "
@@ -261,7 +262,7 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"9^      " // 1C cursor (bottom left horizontal)
+		"9^      " // 0x1C: cursor (bottom left horizontal)
 		"$@      "
 		"        "
 		"        "
@@ -270,7 +271,7 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"        " // 1D cursor (bottom left vertical)
+		"        " // 0x1D: cursor (bottom left vertical)
 		"        "
 		"        "
 		"        "
@@ -279,7 +280,7 @@ namespace sand {
 		"      99"
 		"      ^$"
 		,
-		"^@      " // 1E cursor (bottom right corner)
+		"^@      " // 0x1E: cursor (bottom right corner)
 		"@$      "
 		"        "
 		"        "
@@ -288,7 +289,7 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"      9^" // 1F cursor (bottom right horizontal)
+		"      9^" // 0x1F: cursor (bottom right horizontal)
 		"      $$"
 		"        "
 		"        "
@@ -297,7 +298,7 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"        " // 20 cursor (bottom right vertical)
+		"        " // 0x20: cursor (bottom right vertical)
 		"        "
 		"        "
 		"        "
@@ -305,7 +306,16 @@ namespace sand {
 		"        "
 		"9^      "
 		"$@      "
-	} };
+		,
+		"::::0000" // 0x21: missing texture
+		"::::0000"
+		"::::0000"
+		"::::0000"
+		"0000::::"
+		"0000::::"
+		"0000::::"
+		"0000::::"
+	});
 }
 
 #endif
