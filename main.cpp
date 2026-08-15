@@ -357,7 +357,11 @@ int main() {
 				case '\r':
 					{
 						xte::u64 select_copy = sand::select;
-						sand::select = tile_index(selected_tile);
+						if (!selected_tile.background || !sand::select) {
+							sand::select = tile_index(selected_tile);
+						} else {
+							sand::select = 0;
+						}
 						selected_tile = sand::tiles[select_copy];
 						placed = select_copy;
 					}
