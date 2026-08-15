@@ -316,7 +316,7 @@ int main() {
 					}
 					std::format_to(
 						std::back_inserter(display),
-						"\x1B[{};{}H\x1B[38;2;{};{};{}m\x1B[48;2;{};{};{}m▀\x1B[0m",
+						"\x1B[{};{}H\x1B[38;2;{};{};{}m\x1B[48;2;{};{};{}m▀",
 						pixel_y + 1,
 						pixel_x + 1,
 						sand::screen[pixel_index].pixels[0].r,
