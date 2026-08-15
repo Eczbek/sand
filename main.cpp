@@ -355,6 +355,7 @@ int main() {
 					break;
 				case '\\':
 				case 'R':
+				case 'r':
 					selected_tile = sand::tiles[sand::select];
 					placed = true;
 					break;
