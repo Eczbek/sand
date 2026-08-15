@@ -7,6 +7,7 @@ cmake --build build
 ```
 
 - `W`/`A`/`S`/`D` to move
-- `[`/`]` to select tile
-- ENTER to place tile
-- `%` to save and quit
+- `[`/`]` or `1`/`2` to select tile
+- ENTER or SPACE to place tile
+- `\` or `R` to replace tile
+- `~` to save and quit

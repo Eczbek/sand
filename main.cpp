@@ -343,19 +343,23 @@ int main() {
 		if (([&] -> bool {
 			while (true) {
 				switch (std::fgetc(stdin)) {
-				case '%':
+				case '~':
 					return true;
 				case '[':
+				case '1':
 					sand::select = (sand::select - 1 + sand::tiles.size()) % sand::tiles.size();
 					break;
 				case ']':
+				case '2':
 					++sand::select %= sand::tiles.size();
 					break;
 				case '\\':
+				case 'R':
 					selected_tile = sand::tiles[sand::select];
 					placed = true;
 					break;
 				case '\r':
+				case ' ':
 					{
 						xte::u64 select_copy = sand::select;
 						if (!selected_tile.background || !sand::select) {
