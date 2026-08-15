@@ -8,12 +8,13 @@
 namespace sand {
 	struct tile {
 		xte::u64 texture_index;
+		bool background = false;
 
 		[[nodiscard]] friend constexpr bool operator==(const sand::tile&, const sand::tile&) noexcept = default;
 	};
 	
 	inline constexpr auto tiles = std::define_static_array(typename[:^^sand::tile[]:] {
-		/* 0x00: void */          { 0x00 },
+		/* 0x00: void */          { 0x00, true },
 		/* 0x01: stone */         { 0x01 },
 		/* 0x02: cobbled stone */ { 0x02 },
 		/* 0x03: dark blue */     { 0x03 },
