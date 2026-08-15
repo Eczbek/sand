@@ -48,6 +48,14 @@ namespace sand {
 
 	std::unordered_map<xte::u64, std::unordered_map<xte::u64, xte::fixed_array<xte::fixed_array<sand::tile, sand::chunk_h>, sand::chunk_w>>> world;
 
+	[[nodiscard]] constexpr bool chunk_exists(const sand::pos& pos) noexcept {
+		return sand::world.contains(pos.chunk_x) && sand::world[pos.chunk_x].contains(pos.chunk_y);
+	}
+
+	[[nodiscard]] constexpr sand::tile& world_at(const sand::pos& pos) noexcept {
+		return sand::world[pos.chunk_x][pos.chunk_y][pos.tile_x][pos.tile_y];
+	}
+
 	struct display_char {
 		xte::fixed_array<sand::color3, 2> pixels;
 
@@ -140,7 +148,7 @@ namespace sand {
 		std::fflush(stdout);
 	}
 
-	[[nodiscard]] constexpr xte::u64 tile_index(sand::tile tile) noexcept {
+	[[nodiscard]] constexpr xte::u64 tile_index(const sand::tile& tile) noexcept {
 		for (xte::u64 i = 0; i < sand::tiles.size(); ++i) {
 			if (sand::tiles[i] == tile) {
 				return i;
@@ -249,8 +257,11 @@ int main() {
 				}
 				for (xte::u64 tile_y = sand::chunk_h; tile_y--;) {
 					for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
-						const auto& tile = sand::world[chunk_x][chunk_y][tile_x][tile_y];
 						auto pos = sand::pos(chunk_x, chunk_y, tile_x, tile_y);
+						const auto& tile = sand::world_at(pos);
+						if (tile.transparent) {
+							sand::draw_tile(0, pos);
+						}
 						if (tile.background) {
 							sand::draw_tile(tile.texture_index, pos);
 						} else {
