@@ -12,6 +12,7 @@
 #include <xte/data/string_view.hpp>
 #include <xte/io/file.hpp>
 #include <xte/io/file_mode.hpp>
+#include <xte/math/less.hpp>
 #include <xte/math/parse_number.hpp>
 #include <xte/util/error.hpp>
 
@@ -231,7 +232,7 @@ int main() {
 								bool right_empty = (tile_x < (sand::chunk_w - 1)) ? !chunk[tile_x + 1][tile_y].texture_index : (sand::world.contains(chunk_x + 1) && sand::world[chunk_x + 1].contains(chunk_y)) ? !sand::world[chunk_x + 1][chunk_y][0][tile_y].texture_index : false;
 								bool down_empty = tile_y ? !chunk[tile_x][tile_y - 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y - 1)) ? !sand::world[chunk_x][chunk_y - 1][tile_x][sand::chunk_h - 1].texture_index : false;
 								bool up_empty = (tile_y < (sand::chunk_h - 1)) ? !chunk[tile_x][tile_y + 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y + 1)) ? !sand::world[chunk_x][chunk_y + 1][tile_x][0].texture_index : false;
-								if ((std::uniform_int_distribution<xte::u64>(0, 5)(rng) < (left_empty + right_empty + down_empty + up_empty)) || !std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
+								if (xte::less(std::uniform_int_distribution<xte::u64>(0, 5)(rng), (left_empty + right_empty + down_empty + up_empty)) || !std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
 									tile = sand::tiles[0x00];
 								} else {
 									tile = sand::tiles[std::bernoulli_distribution()(rng) ? 0x02 : 0x07];
