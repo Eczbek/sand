@@ -137,7 +137,7 @@ namespace sand {
 		std::fflush(stdout);
 	}
 
-	static constexpr sand::color3 shadow_color = 0x0F0F0F;
+	static constexpr sand::color3 shadow_color = 0x030303;
 
 	[[nodiscard]] constexpr xte::u64 tile_index(sand::tile tile) noexcept {
 		for (xte::u64 i = 0; i < sand::tiles.size(); ++i) {
@@ -274,16 +274,16 @@ int main() {
 			sand::draw_tile_overlay(0x17, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0) - sand::pos(0, 0, 0, 1)); // bottom right corner
 		} else {
 			sand::draw_tile_overlay(0x0E, sand::shadow_color, sand::camera_pos); // top left corner
-			sand::draw_tile_overlay(0x0F, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top left horizontal
-			sand::draw_tile_overlay(0x10, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top left vertical
+			sand::draw_tile_overlay(0x0F, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top left horizontal
+			sand::draw_tile_overlay(0x10, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // top left vertical
 			sand::draw_tile_overlay(0x11, sand::shadow_color, sand::camera_pos); // top right corner
-			sand::draw_tile_overlay(0x12, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top right horizontal
-			sand::draw_tile_overlay(0x13, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top right vertical
-			sand::draw_tile_overlay(0x16, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom left vertical
-			sand::draw_tile_overlay(0x15, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom left horizontal
+			sand::draw_tile_overlay(0x12, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top right horizontal
+			sand::draw_tile_overlay(0x13, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // top right vertical
+			sand::draw_tile_overlay(0x16, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // bottom left vertical
+			sand::draw_tile_overlay(0x15, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom left horizontal
 			sand::draw_tile_overlay(0x14, sand::shadow_color, sand::camera_pos); //bottom left corner
-			sand::draw_tile_overlay(0x19, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom right vertical
-			sand::draw_tile_overlay(0x18, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom right horizontal
+			sand::draw_tile_overlay(0x19, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // bottom right vertical
+			sand::draw_tile_overlay(0x18, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom right horizontal
 			sand::draw_tile_overlay(0x17, sand::shadow_color, sand::camera_pos); //bottom right corner
 		}
 

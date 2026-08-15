@@ -44,7 +44,7 @@ namespace sand {
 		"        "
 		"        "
 		"      99"
-		"      ^$"
+		"      9&"
 		,
 		"        " // 0x04: cursor (top left horizontal)
 		"        "
@@ -52,8 +52,8 @@ namespace sand {
 		"        "
 		"        "
 		"        "
-		"9^      "
-		"@@      "
+		"99      "
+		"&*      "
 		,
 		"llll...." // 0x05: blue (dark)
 		"llll...."
@@ -136,8 +136,8 @@ namespace sand {
 		"JdfdNxsc"
 		"mcsxk,jf"
 		,
-		"      ^$" // 0x0E: cursor (top left vertical)
-		"      $@"
+		"      9&" // 0x0E: cursor (top left vertical)
+		"      *&"
 		"        "
 		"        "
 		"        "
@@ -151,8 +151,8 @@ namespace sand {
 		"        "
 		"        "
 		"        "
-		"9^      "
-		"^$      "
+		"99      "
+		"&&      "
 		,
 		"{[[]]{[]" // 0x10: ice
 		"[[]{[]]}"
@@ -242,19 +242,10 @@ namespace sand {
 		"        "
 		"        "
 		"      99"
-		"      ^$"
+		"      *&"
 		,
-		"9$      " // 0x1A: cursor (top right vertical)
-		"^@      "
-		"        "
-		"        "
-		"        "
-		"        "
-		"        "
-		"        "
-		,
-		"      $^" // 0x1B: cursor (bottom left corner)
-		"      @@"
+		"9&      " // 0x1A: cursor (top right vertical)
+		"9&      "
 		"        "
 		"        "
 		"        "
@@ -262,8 +253,17 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"9^      " // 0x1C: cursor (bottom left horizontal)
-		"$@      "
+		"      9&" // 0x1B: cursor (bottom left corner)
+		"      *&"
+		"        "
+		"        "
+		"        "
+		"        "
+		"        "
+		"        "
+		,
+		"99      " // 0x1C: cursor (bottom left horizontal)
+		"&&      "
 		"        "
 		"        "
 		"        "
@@ -278,10 +278,10 @@ namespace sand {
 		"        "
 		"        "
 		"      99"
-		"      ^$"
+		"      9&"
 		,
-		"^@      " // 0x1E: cursor (bottom right corner)
-		"@$      "
+		"9&      " // 0x1E: cursor (bottom right corner)
+		"&&      "
 		"        "
 		"        "
 		"        "
@@ -289,8 +289,8 @@ namespace sand {
 		"        "
 		"        "
 		,
-		"      9^" // 0x1F: cursor (bottom right horizontal)
-		"      $$"
+		"      99" // 0x1F: cursor (bottom right horizontal)
+		"      9*"
 		"        "
 		"        "
 		"        "
@@ -304,8 +304,8 @@ namespace sand {
 		"        "
 		"        "
 		"        "
-		"9^      "
-		"$@      "
+		"99      "
+		"*&      "
 		,
 		"::::0000" // 0x21: missing texture
 		"::::0000"
@@ -325,14 +325,14 @@ namespace sand {
 		"!@1$@!@2"
 		"#$#@@!!!"
 		,
-		"!@#@!!!@" // 0x23: background
-		"!#@!!@#!"
-		"#@!!!#!!"
-		"@!!@#!!@"
-		"!!#@!#@!"
-		"@#@!#@!!"
-		"#@!#@!!@"
-		"!!@@!!@!"
+		"0TRT000T" // 0x23: background
+		"0RT00TR0"
+		"RT000R00"
+		"T00TR00T"
+		"00RT0RT0"
+		"TRT0RT00"
+		"RT0RT00T"
+		"00TT00T0"
 	});
 }
 
