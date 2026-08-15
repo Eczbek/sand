@@ -29,6 +29,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 
 using namespace std::literals;
 
@@ -70,19 +71,43 @@ namespace sand {
 			: dummy;
 	}
 
-	constexpr void draw_texture(xte::u64 texture_index, sand::pos pos) noexcept {
-		const xte::u64 offset_x = sand::screen_size.x / 2 - sand::texture_w / 2 + ((pos.chunk_x - sand::camera_pos.chunk_x) * sand::chunk_w + pos.tile_x - sand::camera_pos.tile_x) * sand::texture_w;
-		const xte::u64 offset_y = sand::screen_size.y - sand::texture_h / 2 - ((pos.chunk_y - sand::camera_pos.chunk_y) * sand::chunk_h + pos.tile_y - sand::camera_pos.tile_y) * sand::texture_h;
-		for (xte::u64 texture_x = 0; texture_x < sand::texture_w; ++texture_x) {
-			for (xte::u64 texture_y = 0; texture_y < sand::texture_h; ++texture_y) {
-				if (const auto [r, g, b, a] = sand::texture_at(texture_index, { texture_x, texture_y }); a) {
-					sand::screen_at({ offset_x + texture_x, offset_y + texture_y }) = sand::color3(r, g, b);
+	constexpr sand::pixel_pos pos_to_pixel_pos(const sand::pos& pos) noexcept {
+		return {
+			sand::screen_size.x / 2 - sand::texture_w / 2 + ((pos.chunk_x - sand::camera_pos.chunk_x) * sand::chunk_w + pos.tile_x - sand::camera_pos.tile_x) * sand::texture_w,
+			sand::screen_size.y - sand::texture_h / 2 - ((pos.chunk_y - sand::camera_pos.chunk_y) * sand::chunk_h + pos.tile_y - sand::camera_pos.tile_y) * sand::texture_h
+		};
+	}
+
+	constexpr void draw_texture(xte::u64 texture_index, sand::pixel_pos pixel_pos) noexcept {
+		for (xte::u64 x = 0; x < sand::texture_w; ++x) {
+			for (xte::u64 y = 0; y < sand::texture_h; ++y) {
+				if (const auto [r, g, b, a] = sand::texture_at(texture_index, { x, y }); a) {
+					sand::screen_at({ pixel_pos.x + x, pixel_pos.y + y }) = sand::color3(r, g, b);
 				}
 			}
 		}
 	}
 
-	constexpr void write_text(xte::string_view text, const sand::color3& fg, const sand::color3& bg, sand::pixel_pos pos) noexcept {
+	constexpr void draw_texture_overlay(xte::u64 texture_index, const sand::color3& shadow, sand::pixel_pos pixel_pos) noexcept {
+		for (xte::u64 x = 0; x < sand::texture_w; ++x) {
+			for (xte::u64 y = 0; y < sand::texture_h; ++y) {
+				if (sand::texture_at(texture_index, { x, y }).a) {
+					sand::screen_at({ pixel_pos.x + x, pixel_pos.y + y }) = shadow;
+				}
+			}
+		}
+		sand::draw_texture(texture_index, { pixel_pos.x, pixel_pos.y - 1 });
+	}
+
+	constexpr void draw_tile(xte::u64 texture_index, const sand::pos& pos) noexcept {
+		sand::draw_texture(texture_index, sand::pos_to_pixel_pos(pos));
+	}
+
+	constexpr void draw_tile_overlay(xte::u64 texture_index, const sand::color3& shadow, const sand::pos& pos) noexcept {
+		sand::draw_texture_overlay(texture_index, shadow, sand::pos_to_pixel_pos(pos));
+	}
+
+	constexpr void write_text(xte::string_view text, const sand::color3& fg, const sand::color3& shadow, sand::pixel_pos pos) noexcept {
 		xte::u64 row = 0;
 		xte::u64 col = 0;
 		for (char c : text) {
@@ -97,7 +122,7 @@ namespace sand {
 						const xte::u64 pixel_x = pos.x + col * sand::font_w + x;
 						const xte::u64 pixel_y = pos.y + row * sand::font_h + y;
 						screen_at({ pixel_x, pixel_y }) = fg;
-						screen_at({ pixel_x, pixel_y + 1 }) = bg;
+						screen_at({ pixel_x, pixel_y + 1 }) = shadow;
 					}
 				}
 			}
@@ -110,6 +135,17 @@ namespace sand {
 	constexpr void log(xte::string_view message) noexcept {
 		std::println("{}\r", message);
 		std::fflush(stdout);
+	}
+
+	static constexpr sand::color3 shadow_color = 0x0F0F0F;
+
+	[[nodiscard]] constexpr xte::u64 tile_index(sand::tile tile) noexcept {
+		for (xte::u64 i = 0; i < sand::tiles.size(); ++i) {
+			if (sand::tiles[i] == tile) {
+				return i;
+			}
+		}
+		std::unreachable();
 	}
 }
 
@@ -159,7 +195,9 @@ int main() {
 				const xte::string data = xte::file(xte::string_view(chunk_file.path().c_str()), xte::file_mode::read).read();
 				for (xte::u64 tile_y = sand::chunk_h; tile_y--;) {
 					for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
-						sand::world[chunk_x][chunk_y][tile_x][tile_y] = sand::tiles[parse(data)];
+						auto a = parse(data);
+						if (a >= sand::tiles.size()) {sand::log(std::format("out of bounds: {}", a));return 1;}
+						sand::world[chunk_x][chunk_y][tile_x][tile_y] = sand::tiles[a];
 					}
 				}
 			}
@@ -184,47 +222,69 @@ int main() {
 				const xte::u64 chunk_x = sand::camera_pos.chunk_x + view_chunk_x - 1;
 				const xte::u64 chunk_y = sand::camera_pos.chunk_y + view_chunk_y - 1;
 				if (!sand::world.contains(chunk_x) || !sand::world[chunk_x].contains(chunk_y)) {
-					for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
-						for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
-							sand::world[chunk_x][chunk_y][tile_x][tile_y] = sand::tiles[std::uniform_int_distribution<xte::u64>(0, sand::tiles.size() - 1)(rng)];
+					auto& chunk = sand::world[chunk_x][chunk_y];
+					if (std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
+						for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
+							for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
+								auto& tile = chunk[tile_x][tile_y];
+								bool left_empty = tile_x ? !chunk[tile_x - 1][tile_y].texture_index : (sand::world.contains(chunk_x - 1) && sand::world[chunk_x - 1].contains(chunk_y)) ? !sand::world[chunk_x - 1][chunk_y][sand::chunk_w - 1][tile_y].texture_index : false;
+								bool right_empty = (tile_x < (sand::chunk_w - 1)) ? !chunk[tile_x + 1][tile_y].texture_index : (sand::world.contains(chunk_x + 1) && sand::world[chunk_x + 1].contains(chunk_y)) ? !sand::world[chunk_x + 1][chunk_y][0][tile_y].texture_index : false;
+								bool down_empty = tile_y ? !chunk[tile_x][tile_y - 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y - 1)) ? !sand::world[chunk_x][chunk_y - 1][tile_x][sand::chunk_h - 1].texture_index : false;
+								bool up_empty = (tile_y < (sand::chunk_h - 1)) ? !chunk[tile_x][tile_y + 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y + 1)) ? !sand::world[chunk_x][chunk_y + 1][tile_x][0].texture_index : false;
+								if ((std::uniform_int_distribution<xte::u64>(0, 5)(rng) < (left_empty + right_empty + down_empty + up_empty)) || !std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
+									tile = sand::tiles[0x00];
+								} else {
+									tile = sand::tiles[std::bernoulli_distribution()(rng) ? 0x02 : 0x07];
+								}
+							}
+						}
+					} else {
+						for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
+							for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
+								chunk[tile_x][tile_y] = sand::tiles[std::uniform_int_distribution<xte::u64>(0, sand::tiles.size() - 1)(rng)];
+							}
 						}
 					}
 				}
 				for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
 					for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
-						sand::draw_texture(sand::world[chunk_x][chunk_y][tile_x][tile_y].texture_index, { chunk_x, chunk_y, tile_x, tile_y });
+						sand::draw_tile(sand::world[chunk_x][chunk_y][tile_x][tile_y].texture_index, { chunk_x, chunk_y, tile_x, tile_y });
 					}
 				}
 			}
 		}
 
 		if (sand::select && !placed) {
-			sand::draw_texture(sand::tiles[sand::select].texture_index, sand::camera_pos);
-			sand::draw_texture(0x0E, sand::camera_pos - sand::pos(0, 0, 1, 0) + sand::pos(0, 0, 0, 1)); // top left corner
-			sand::draw_texture(0x0F, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top left horizontal
-			sand::draw_texture(0x10, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top left vertical
-			sand::draw_texture(0x11, sand::camera_pos + sand::pos(0, 0, 1, 1)); // top right corner
-			sand::draw_texture(0x12, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top right horizontal
-			sand::draw_texture(0x13, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top right vertical
-			sand::draw_texture(0x14, sand::camera_pos - sand::pos(0, 0, 1, 1)); // bottom left corner
-			sand::draw_texture(0x15, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom left horizontal
-			sand::draw_texture(0x16, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom left vertical
-			sand::draw_texture(0x17, sand::camera_pos + sand::pos(0, 0, 1, 0) - sand::pos(0, 0, 0, 1)); // bottom right corner
-			sand::draw_texture(0x18, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom right horizontal
-			sand::draw_texture(0x19, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom right vertical
+			sand::draw_tile_overlay(0x0E, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0) + sand::pos(0, 0, 0, 1)); // top left corner
+			sand::draw_tile_overlay(0x0F, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top left horizontal
+			sand::draw_tile_overlay(0x10, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top left vertical
+			sand::draw_tile_overlay(0x11, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 1)); // top right corner
+			sand::draw_tile_overlay(0x12, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top right horizontal
+			sand::draw_tile_overlay(0x13, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top right vertical
+			if (sand::select < sand::tiles.size()) {
+				sand::draw_tile_overlay(sand::tiles[sand::select].texture_index, sand::shadow_color, sand::camera_pos);
+			} else {
+				sand::write_text(std::format("{}", sand::select), 0xFF0000, sand::shadow_color, { sand::screen_size.x / 2, sand::screen_size.y / 2 });
+			}
+			sand::draw_tile_overlay(0x16, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom left vertical
+			sand::draw_tile_overlay(0x15, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom left horizontal
+			sand::draw_tile_overlay(0x14, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 1)); // bottom left corner
+			sand::draw_tile_overlay(0x19, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom right vertical
+			sand::draw_tile_overlay(0x18, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom right horizontal
+			sand::draw_tile_overlay(0x17, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0) - sand::pos(0, 0, 0, 1)); // bottom right corner
 		} else {
-			sand::draw_texture(0x0E, sand::camera_pos); // top left corner
-			sand::draw_texture(0x0F, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top left horizontal
-			sand::draw_texture(0x10, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top left vertical
-			sand::draw_texture(0x11, sand::camera_pos); // top right corner
-			sand::draw_texture(0x12, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top right horizontal
-			sand::draw_texture(0x13, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top right vertical
-			sand::draw_texture(0x14, sand::camera_pos); //bottom left corner
-			sand::draw_texture(0x15, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom left horizontal
-			sand::draw_texture(0x16, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom left vertical
-			sand::draw_texture(0x17, sand::camera_pos); //bottom right corner
-			sand::draw_texture(0x18, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom right horizontal
-			sand::draw_texture(0x19, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom right vertical
+			sand::draw_tile_overlay(0x0E, sand::shadow_color, sand::camera_pos); // top left corner
+			sand::draw_tile_overlay(0x0F, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top left horizontal
+			sand::draw_tile_overlay(0x10, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top left vertical
+			sand::draw_tile_overlay(0x11, sand::shadow_color, sand::camera_pos); // top right corner
+			sand::draw_tile_overlay(0x12, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top right horizontal
+			sand::draw_tile_overlay(0x13, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top right vertical
+			sand::draw_tile_overlay(0x16, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom left vertical
+			sand::draw_tile_overlay(0x15, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom left horizontal
+			sand::draw_tile_overlay(0x14, sand::shadow_color, sand::camera_pos); //bottom left corner
+			sand::draw_tile_overlay(0x19, sand::shadow_color, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom right vertical
+			sand::draw_tile_overlay(0x18, sand::shadow_color, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom right horizontal
+			sand::draw_tile_overlay(0x17, sand::shadow_color, sand::camera_pos); //bottom right corner
 		}
 
 		sand::write_text(std::format(
@@ -240,7 +300,7 @@ int main() {
 			sand::camera_pos.tile_x,
 			sand::camera_pos.tile_y,
 			sand::select
-		), 0xFFFFFF, 0x000000, { 0, 0 });
+		), 0xFFFFFF, sand::shadow_color, { 0, 0 });
 
 		std::string display;
 		if (sand::screen != previous_screen) {
@@ -276,6 +336,7 @@ int main() {
 
 		placed = false;
 		::fcntl(STDIN_FILENO, F_SETFL, terminal_blocking | O_NONBLOCK);
+		auto& selected_tile = sand::world[sand::camera_pos.chunk_x][sand::camera_pos.chunk_y][sand::camera_pos.tile_x][sand::camera_pos.tile_y];
 		if (([&] -> bool {
 			while (true) {
 				switch (std::fgetc(stdin)) {
@@ -287,9 +348,17 @@ int main() {
 				case ']':
 					++sand::select %= sand::tiles.size();
 					break;
-				case '\r':
-					sand::world[sand::camera_pos.chunk_x][sand::camera_pos.chunk_y][sand::camera_pos.tile_x][sand::camera_pos.tile_y] = sand::tiles[sand::select];
+				case '\\':
+					selected_tile = sand::tiles[sand::select];
 					placed = true;
+					break;
+				case '\r':
+					{
+						xte::u64 select_copy = sand::select;
+						sand::select = tile_index(selected_tile);
+						selected_tile = sand::tiles[select_copy];
+						placed = select_copy;
+					}
 					break;
 				case 'D':
 				case 'd':
@@ -361,9 +430,9 @@ int main() {
 				}
 				for (xte::u64 tile_y = sand::chunk_h; tile_y--;) {
 					for (xte::u64 tile_x = 0; tile_x < (sand::chunk_w - 1); ++tile_x) {
-						std::print(chunk_file, "{:0>2X} ", sand::world[chunk_x][chunk_y][tile_x][tile_y].texture_index);
+						std::print(chunk_file, "{:0>2X} ", tile_index(sand::world[chunk_x][chunk_y][tile_x][tile_y]));
 					}
-					std::println(chunk_file, "{:0>2X}", sand::world[chunk_x][chunk_y][sand::chunk_w - 1][tile_y].texture_index);
+					std::println(chunk_file, "{:0>2X}", tile_index(sand::world[chunk_x][chunk_y][sand::chunk_w - 1][tile_y]));
 				}
 			}
 		}

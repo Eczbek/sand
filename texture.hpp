@@ -17,7 +17,7 @@ namespace sand {
 	};
 
 	inline constexpr auto textures = std::define_static_array(typename[:^^sand::texture[]:] {
-		/* 0x00: empty */                            { 0x00 },
+		/* 0x00: empty */                            { 0x23 },
 		/* 0x01: stone */                            { 0x01 },
 		/* 0x02: cobbled stone */                    { 0x02 },
 		/* 0x03: dark blue */                        { 0x05 },
@@ -43,7 +43,8 @@ namespace sand {
 		/* 0x17: cursor (bottom right corner) */     { 0x1E },
 		/* 0x18: cursor (bottom right horizontal) */ { 0x1F },
 		/* 0x19: cursor (bottom right vertical) */   { 0x20 },
-		/* 0x1A: missing texture */                  { 0x21 }
+		/* 0x1A: missing texture */                  { 0x21 },
+		/* 0x1B: slate */                            { 0x22 }
 	});
 }
 

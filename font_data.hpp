@@ -1,7 +1,7 @@
 #ifndef SAND_HEADER_FONT
 #	define SAND_HEADER_FONT
 #
-#	include <xte/data/string_view.hpp>
+#	include <xte/data/static_string_view.hpp>
 #	include <xte/util/number_types.hpp>
 #
 #	include <climits>
@@ -10,7 +10,7 @@ namespace sand {
 	inline constexpr xte::u64 font_w = 4;
 	inline constexpr xte::u64 font_h = 5;
 	inline constexpr auto font_data = ([] {
-		typename[:^^xte::string_view[1 << CHAR_BIT]:] font_data;
+		typename[:^^xte::static_string_view[1 << CHAR_BIT]:] font_data;
 		for (std::size_t i = 0; i < (1 << CHAR_BIT); ++i) {
 			font_data[i] =
 				"####"

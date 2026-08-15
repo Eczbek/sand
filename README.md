@@ -1,7 +1,7 @@
 ```bash
 git clone https://github.com/Eczbek/sand
 cd sand
-cmake -B build -S . -G Ninja
+cmake -S. -Bbuild
 cmake --build build
 ./build/sand
 ```

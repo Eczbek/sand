@@ -1,7 +1,7 @@
 #ifndef SAND_HEADER_TEXTURE_DATA
 #	define SAND_HEADER_TEXTURE_DATA
 #
-#	include <xte/data/string_view.hpp>
+#	include <xte/data/static_string_view.hpp>
 #	include <xte/util/number_types.hpp>
 #
 #	include <meta>
@@ -9,7 +9,7 @@
 namespace sand {
 	inline constexpr xte::u64 texture_w = 8;
 	inline constexpr xte::u64 texture_h = 8;
-	inline constexpr auto texture_data = std::define_static_array(typename[:^^xte::string_view[]:] {
+	inline constexpr auto texture_data = std::define_static_array(typename[:^^xte::static_string_view[]:] {
 		"        " // 0x00: empty
 		"        "
 		"        "
@@ -315,6 +315,24 @@ namespace sand {
 		"0000::::"
 		"0000::::"
 		"0000::::"
+		,
+		"!!@!112#" // 0x22: slate
+		"$@!1$#@!"
+		"!#1$@!@$"
+		"#1$@@2$#"
+		"2$@!1$1!"
+		"1!@1$1!@"
+		"!@1$@!@2"
+		"#$#@@!!!"
+		,
+		"!@#@!!!@" // 0x23: background
+		"!#@!!@#!"
+		"#@!!!#!!"
+		"@!!@#!!@"
+		"!!#@!#@!"
+		"@#@!#@!!"
+		"#@!#@!!@"
+		"!!@@!!@!"
 	});
 }
 

@@ -26,7 +26,8 @@ namespace sand {
 		/* 0x0A: grass */         { 0x0A },
 		/* 0x0B: flowers */       { 0x0B },
 		/* 0x0C: ice */           { 0x0C },
-		/* 0x0D: chiseled ice */  { 0x0D }
+		/* 0x0D: chiseled ice */  { 0x0D },
+		/* 0x0E: slate */         { 0x1B }
 	});
 }
 
