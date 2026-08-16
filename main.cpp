@@ -51,7 +51,12 @@ namespace sand {
 
 	bool inventory_open = false;
 	inline constexpr auto inventory = ([] {
-		auto inventory = xte::fixed_array<xte::fixed_array<sand::tile, sand::chunk_h>, sand::chunk_w>();
+		xte::fixed_array<xte::fixed_array<sand::tile, sand::chunk_h>, sand::chunk_w> inventory;
+		for (xte::u64 x = 0; x < sand::chunk_w; ++x) {
+			for (xte::u64 y = 0; y < sand::chunk_h; ++y) {
+				inventory[x][y] = sand::tiles[0x00];
+			}
+		}
 		constexpr xte::u64 mid_x = sand::chunk_w / 2;
 		constexpr xte::u64 mid_y = sand::chunk_h / 2;
 		inventory[mid_x][mid_y] = sand::tiles[0x01]; // stone
@@ -262,7 +267,7 @@ int main() {
 					auto pos = sand::pos(0, 0, tile_x, tile_y);
 					const auto& tile = sand::inventory[tile_x][tile_y];
 					if (tile.transparent) {
-						sand::draw_tile(0, pos);
+						sand::draw_tile(0x00, pos);
 					}
 					if (tile.background) {
 						sand::draw_tile(tile.texture_index, pos);
@@ -306,7 +311,7 @@ int main() {
 							auto pos = sand::pos(chunk_x, chunk_y, tile_x, tile_y);
 							const auto& tile = sand::world_at(pos);
 							if (tile.transparent) {
-								sand::draw_tile(0, pos);
+								sand::draw_tile(0x00, pos);
 							}
 							if (tile.background) {
 								sand::draw_tile(tile.texture_index, pos);
@@ -362,7 +367,7 @@ int main() {
 			static_cast<xte::i64>(camera_pos.chunk_y),
 			camera_pos.tile_x,
 			camera_pos.tile_y
-		), 0xFFFFFF, { 0, 0 });
+		), 0xFFFFFF, { 1, 1 });
 
 		std::string display;
 		if (sand::screen != previous_screen) {
@@ -398,7 +403,7 @@ int main() {
 
 		placed = false;
 		::fcntl(STDIN_FILENO, F_SETFL, terminal_blocking | O_NONBLOCK);
-		auto& selected_tile = sand::world[sand::camera_pos.chunk_x][sand::camera_pos.chunk_y][sand::camera_pos.tile_x][sand::camera_pos.tile_y];
+		auto& selected_tile = sand::world_at(sand::camera_pos);
 		if (([&] -> bool {
 			while (true) {
 				switch (std::fgetc(stdin)) {
@@ -452,7 +457,11 @@ int main() {
 					break;
 				case 'Q':
 				case 'q':
-					sand::select = sand::tiles[0x00];
+					if (sand::select == sand::tiles[0x00]) {
+						sand::select = selected_tile;
+					} else {
+						sand::select = sand::tiles[0x00];
+					}
 					sand::inventory_open = false;
 					break;
 				default:

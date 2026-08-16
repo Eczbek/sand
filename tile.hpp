@@ -7,7 +7,7 @@
 
 namespace sand {
 	struct tile {
-		xte::u64 texture_index = 0x00;
+		xte::u64 texture_index;
 		bool background = false;
 		bool transparent = false;
 
