@@ -4,8 +4,8 @@
 #	include <xte/util/number_types.hpp>
 
 namespace sand {
-	static constexpr xte::u64 chunk_w = 32;
-	static constexpr xte::u64 chunk_h = 32;
+	inline constexpr xte::u64 chunk_w = 32;
+	inline constexpr xte::u64 chunk_h = 32;
 
 	struct pos {
 		xte::u64 chunk_x;

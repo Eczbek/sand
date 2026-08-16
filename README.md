@@ -7,7 +7,8 @@ cmake --build build
 ```
 
 - `W`/`A`/`S`/`D` to move
-- `[`/`]` or `1`/`2` to select tile
-- ENTER or SPACE to place tile
+- ENTER or SPACE to place or select tile
+- `E` to open inventory
+- `Q` to unselect tile
 - `\` or `R` to replace tile
 - `~` to save and quit

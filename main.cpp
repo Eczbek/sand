@@ -44,9 +44,39 @@ namespace sand {
 
 	xte::u64 tick = 0;
 	sand::pos camera_pos = { 0, 0, 0, 0 };
-	xte::u64 select = 0;
+	sand::pos select_pos = { 0, 0, sand::chunk_w / 2, sand::chunk_h / 2 };
+	sand::tile select;
 
 	std::unordered_map<xte::u64, std::unordered_map<xte::u64, xte::fixed_array<xte::fixed_array<sand::tile, sand::chunk_h>, sand::chunk_w>>> world;
+
+	bool inventory_open = false;
+	inline constexpr auto inventory = ([] {
+		auto inventory = xte::fixed_array<xte::fixed_array<sand::tile, sand::chunk_h>, sand::chunk_w>();
+		constexpr xte::u64 mid_x = sand::chunk_w / 2;
+		constexpr xte::u64 mid_y = sand::chunk_h / 2;
+		inventory[mid_x][mid_y] = sand::tiles[0x01]; // stone
+		inventory[mid_x][mid_y + 1] = sand::tiles[0x07]; // rock
+		inventory[mid_x][mid_y + 2] = sand::tiles[0x0E]; // slate
+		inventory[mid_x - 1][mid_y + 1] = sand::tiles[0x02]; // cobbled stone
+		inventory[mid_x + 1][mid_y + 1] = sand::tiles[0x10]; // stone bricks
+		inventory[mid_x - 1][mid_y] = sand::tiles[0x06]; // dirt
+		inventory[mid_x + 1][mid_y] = sand::tiles[0x09]; // wood
+		inventory[mid_x + 2][mid_y] = sand::tiles[0x0F]; // wood planks
+		inventory[mid_x][mid_y - 1] = sand::tiles[0x0C]; // ice
+		inventory[mid_x][mid_y - 2] = sand::tiles[0x0D]; // chiseled ice
+		inventory[mid_x - 1][mid_y - 1] = sand::tiles[0x0A]; // grass
+		inventory[mid_x - 2][mid_y - 1] = sand::tiles[0x0B]; // flowers
+		inventory[mid_x + 1][mid_y - 1] = sand::tiles[0x08]; // leaves
+		inventory[mid_x + 1][mid_y + 2] = sand::tiles[0x11]; // glass
+		inventory[mid_x + 2][mid_y - 1] = sand::tiles[0x05]; // rainbow
+		inventory[mid_x + 1][mid_y - 2] = sand::tiles[0x04]; // light blue
+		inventory[mid_x + 2][mid_y - 2] = sand::tiles[0x03]; // dark blue
+		inventory[mid_x - 1][mid_y + 2] = sand::tiles[0x12]; // conveyor right
+		inventory[mid_x - 2][mid_y + 2] = sand::tiles[0x13]; // conveyor left
+		inventory[mid_x - 1][mid_y + 3] = sand::tiles[0x14]; // conveyor up
+		inventory[mid_x - 2][mid_y + 1] = sand::tiles[0x15]; // conveyor down
+		return inventory;
+	})();
 
 	[[nodiscard]] constexpr bool chunk_exists(const sand::pos& pos) noexcept {
 		return sand::world.contains(pos.chunk_x) && sand::world[pos.chunk_x].contains(pos.chunk_y);
@@ -83,9 +113,10 @@ namespace sand {
 	}
 
 	constexpr sand::pixel_pos pos_to_pixel_pos(const sand::pos& pos) noexcept {
+		const auto& camera_pos = sand::inventory_open ? sand::select_pos : sand::camera_pos;
 		return {
-			sand::screen_size.x / 2 - sand::texture_w / 2 + ((pos.chunk_x - sand::camera_pos.chunk_x) * sand::chunk_w + pos.tile_x - sand::camera_pos.tile_x) * sand::texture_w,
-			sand::screen_size.y - sand::texture_h / 2 - ((pos.chunk_y - sand::camera_pos.chunk_y) * sand::chunk_h + pos.tile_y - sand::camera_pos.tile_y) * sand::texture_h
+			sand::screen_size.x / 2 - sand::texture_w / 2 + ((pos.chunk_x - camera_pos.chunk_x) * sand::chunk_w + pos.tile_x - camera_pos.tile_x) * sand::texture_w,
+			sand::screen_size.y - sand::texture_h / 2 - ((pos.chunk_y - camera_pos.chunk_y) * sand::chunk_h + pos.tile_y - camera_pos.tile_y) * sand::texture_h
 		};
 	}
 
@@ -193,7 +224,6 @@ int main() {
 
 		sand::tick = parse(data);
 		sand::camera_pos = { parse(data), parse(data), parse(data), parse(data) };
-		sand::select = parse(data);
 
 		if (std::filesystem::exists(std::format("{}/chunks", sand::save_dir))) {
 			for (const auto& chunk_file : std::filesystem::directory_iterator(std::format("{}/chunks", sand::save_dir))) {
@@ -226,79 +256,99 @@ int main() {
 		sand::screen.reset();
 		sand::screen.resize(sand::screen_size.x * sand::screen_size.y);
 
-		for (xte::u64 view_chunk_y = 3; view_chunk_y--;) {
-			for (xte::u64 view_chunk_x = 0; view_chunk_x < 3; ++view_chunk_x) {
-				const xte::u64 chunk_x = sand::camera_pos.chunk_x + view_chunk_x - 1;
-				const xte::u64 chunk_y = sand::camera_pos.chunk_y + view_chunk_y - 1;
-				if (!sand::world.contains(chunk_x) || !sand::world[chunk_x].contains(chunk_y)) {
-					auto& chunk = sand::world[chunk_x][chunk_y];
-					if (std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
-						for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
-							for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
-								auto& tile = chunk[tile_x][tile_y];
-								bool left_empty = tile_x ? !chunk[tile_x - 1][tile_y].texture_index : (sand::world.contains(chunk_x - 1) && sand::world[chunk_x - 1].contains(chunk_y)) ? !sand::world[chunk_x - 1][chunk_y][sand::chunk_w - 1][tile_y].texture_index : false;
-								bool right_empty = (tile_x < (sand::chunk_w - 1)) ? !chunk[tile_x + 1][tile_y].texture_index : (sand::world.contains(chunk_x + 1) && sand::world[chunk_x + 1].contains(chunk_y)) ? !sand::world[chunk_x + 1][chunk_y][0][tile_y].texture_index : false;
-								bool down_empty = tile_y ? !chunk[tile_x][tile_y - 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y - 1)) ? !sand::world[chunk_x][chunk_y - 1][tile_x][sand::chunk_h - 1].texture_index : false;
-								bool up_empty = (tile_y < (sand::chunk_h - 1)) ? !chunk[tile_x][tile_y + 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y + 1)) ? !sand::world[chunk_x][chunk_y + 1][tile_x][0].texture_index : false;
-								if (xte::less(std::uniform_int_distribution<xte::u64>(0, 5)(rng), (left_empty + right_empty + down_empty + up_empty)) || !std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
-									tile = sand::tiles[0x00];
-								} else {
-									tile = sand::tiles[std::bernoulli_distribution()(rng) ? 0x02 : 0x07];
+		if (sand::inventory_open) {
+			for (xte::u64 tile_y = sand::chunk_h; tile_y--;) {
+				for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
+					auto pos = sand::pos(0, 0, tile_x, tile_y);
+					const auto& tile = sand::inventory[tile_x][tile_y];
+					if (tile.transparent) {
+						sand::draw_tile(0, pos);
+					}
+					if (tile.background) {
+						sand::draw_tile(tile.texture_index, pos);
+					} else {
+						sand::draw_tile_overlay(tile.texture_index, 0, pos);
+					}
+				}
+			}
+		} else {
+			for (xte::u64 view_chunk_y = 3; view_chunk_y--;) {
+				for (xte::u64 view_chunk_x = 0; view_chunk_x < 3; ++view_chunk_x) {
+					const xte::u64 chunk_x = sand::camera_pos.chunk_x + view_chunk_x - 1;
+					const xte::u64 chunk_y = sand::camera_pos.chunk_y + view_chunk_y - 1;
+					if (!sand::world.contains(chunk_x) || !sand::world[chunk_x].contains(chunk_y)) {
+						auto& chunk = sand::world[chunk_x][chunk_y];
+						if (std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
+							for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
+								for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
+									auto& tile = chunk[tile_x][tile_y];
+									bool left_empty = tile_x ? !chunk[tile_x - 1][tile_y].texture_index : (sand::world.contains(chunk_x - 1) && sand::world[chunk_x - 1].contains(chunk_y)) ? !sand::world[chunk_x - 1][chunk_y][sand::chunk_w - 1][tile_y].texture_index : false;
+									bool right_empty = (tile_x < (sand::chunk_w - 1)) ? !chunk[tile_x + 1][tile_y].texture_index : (sand::world.contains(chunk_x + 1) && sand::world[chunk_x + 1].contains(chunk_y)) ? !sand::world[chunk_x + 1][chunk_y][0][tile_y].texture_index : false;
+									bool down_empty = tile_y ? !chunk[tile_x][tile_y - 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y - 1)) ? !sand::world[chunk_x][chunk_y - 1][tile_x][sand::chunk_h - 1].texture_index : false;
+									bool up_empty = (tile_y < (sand::chunk_h - 1)) ? !chunk[tile_x][tile_y + 1].texture_index : (sand::world.contains(chunk_x) && sand::world[chunk_x].contains(chunk_y + 1)) ? !sand::world[chunk_x][chunk_y + 1][tile_x][0].texture_index : false;
+									if (xte::less(std::uniform_int_distribution<xte::u64>(0, 5)(rng), (left_empty + right_empty + down_empty + up_empty)) || !std::uniform_int_distribution<xte::u64>(0, 63)(rng)) {
+										tile = sand::tiles[0x00];
+									} else {
+										tile = sand::tiles[std::bernoulli_distribution()(rng) ? 0x02 : 0x07];
+									}
+								}
+							}
+						} else {
+							for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
+								for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
+									chunk[tile_x][tile_y] = sand::tiles[std::uniform_int_distribution<xte::u64>(0, sand::tiles.size() - 1)(rng)];
 								}
 							}
 						}
-					} else {
-						for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
-							for (xte::u64 tile_y = 0; tile_y < sand::chunk_h; ++tile_y) {
-								chunk[tile_x][tile_y] = sand::tiles[std::uniform_int_distribution<xte::u64>(0, sand::tiles.size() - 1)(rng)];
-							}
-						}
 					}
-				}
-				for (xte::u64 tile_y = sand::chunk_h; tile_y--;) {
-					for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
-						auto pos = sand::pos(chunk_x, chunk_y, tile_x, tile_y);
-						const auto& tile = sand::world_at(pos);
-						if (tile.transparent) {
-							sand::draw_tile(0, pos);
-						}
-						if (tile.background) {
-							sand::draw_tile(tile.texture_index, pos);
-						} else {
-							sand::draw_tile_overlay(tile.texture_index, 0, pos);
+					for (xte::u64 tile_y = sand::chunk_h; tile_y--;) {
+						for (xte::u64 tile_x = 0; tile_x < sand::chunk_w; ++tile_x) {
+							auto pos = sand::pos(chunk_x, chunk_y, tile_x, tile_y);
+							const auto& tile = sand::world_at(pos);
+							if (tile.transparent) {
+								sand::draw_tile(0, pos);
+							}
+							if (tile.background) {
+								sand::draw_tile(tile.texture_index, pos);
+							} else {
+								sand::draw_tile_overlay(tile.texture_index, 0, pos);
+							}
 						}
 					}
 				}
 			}
 		}
 
-		if (sand::select && !placed) {
-			sand::draw_tile_overlay(0x0E, 1, sand::camera_pos - sand::pos(0, 0, 1, 0) + sand::pos(0, 0, 0, 1)); // top left corner
-			sand::draw_tile_overlay(0x0F, 1, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top left horizontal
-			sand::draw_tile_overlay(0x10, 1, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top left vertical
-			sand::draw_tile_overlay(0x11, 1, sand::camera_pos + sand::pos(0, 0, 1, 1)); // top right corner
-			sand::draw_tile_overlay(0x12, 1, sand::camera_pos + sand::pos(0, 0, 0, 1)); // top right horizontal
-			sand::draw_tile_overlay(0x13, 1, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top right vertical
-			sand::draw_tile_overlay(sand::tiles[sand::select].texture_index, 1, sand::camera_pos);
-			sand::draw_tile_overlay(0x16, 1, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom left vertical
-			sand::draw_tile_overlay(0x15, 1, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom left horizontal
-			sand::draw_tile_overlay(0x14, 1, sand::camera_pos - sand::pos(0, 0, 1, 1)); // bottom left corner
-			sand::draw_tile_overlay(0x19, 1, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom right vertical
-			sand::draw_tile_overlay(0x18, 1, sand::camera_pos - sand::pos(0, 0, 0, 1)); // bottom right horizontal
-			sand::draw_tile_overlay(0x17, 1, sand::camera_pos + sand::pos(0, 0, 1, 0) - sand::pos(0, 0, 0, 1)); // bottom right corner
+		auto& camera_pos = sand::inventory_open ? sand::select_pos : sand::camera_pos;
+		if (sand::inventory_open || ((sand::select != sand::tiles[0x00]) && !placed)) {
+			sand::draw_tile_overlay(0x0E, 1, camera_pos - sand::pos(0, 0, 1, 0) + sand::pos(0, 0, 0, 1)); // top left corner
+			sand::draw_tile_overlay(0x0F, 1, camera_pos + sand::pos(0, 0, 0, 1)); // top left horizontal
+			sand::draw_tile_overlay(0x10, 1, camera_pos - sand::pos(0, 0, 1, 0)); // top left vertical
+			sand::draw_tile_overlay(0x11, 1, camera_pos + sand::pos(0, 0, 1, 1)); // top right corner
+			sand::draw_tile_overlay(0x12, 1, camera_pos + sand::pos(0, 0, 0, 1)); // top right horizontal
+			sand::draw_tile_overlay(0x13, 1, camera_pos + sand::pos(0, 0, 1, 0)); // top right vertical
+			if (!sand::inventory_open) {
+				sand::draw_tile_overlay(sand::select.texture_index, 1, camera_pos);
+			}
+			sand::draw_tile_overlay(0x16, 1, camera_pos - sand::pos(0, 0, 1, 0)); // bottom left vertical
+			sand::draw_tile_overlay(0x15, 1, camera_pos - sand::pos(0, 0, 0, 1)); // bottom left horizontal
+			sand::draw_tile_overlay(0x14, 1, camera_pos - sand::pos(0, 0, 1, 1)); // bottom left corner
+			sand::draw_tile_overlay(0x19, 1, camera_pos + sand::pos(0, 0, 1, 0)); // bottom right vertical
+			sand::draw_tile_overlay(0x18, 1, camera_pos - sand::pos(0, 0, 0, 1)); // bottom right horizontal
+			sand::draw_tile_overlay(0x17, 1, camera_pos + sand::pos(0, 0, 1, 0) - sand::pos(0, 0, 0, 1)); // bottom right corner
 		} else {
-			sand::draw_tile_overlay(0x0E, 1, sand::camera_pos); // top left corner
-			sand::draw_tile_overlay(0x0F, 1, sand::camera_pos + sand::pos(0, 0, 1, 0)); // top left horizontal
-			sand::draw_tile_overlay(0x10, 1, sand::camera_pos - sand::pos(0, 0, 0, 1)); // top left vertical
-			sand::draw_tile_overlay(0x11, 1, sand::camera_pos); // top right corner
-			sand::draw_tile_overlay(0x12, 1, sand::camera_pos - sand::pos(0, 0, 1, 0)); // top right horizontal
-			sand::draw_tile_overlay(0x13, 1, sand::camera_pos - sand::pos(0, 0, 0, 1)); // top right vertical
-			sand::draw_tile_overlay(0x16, 1, sand::camera_pos + sand::pos(0, 0, 0, 1)); // bottom left vertical
-			sand::draw_tile_overlay(0x15, 1, sand::camera_pos + sand::pos(0, 0, 1, 0)); // bottom left horizontal
-			sand::draw_tile_overlay(0x14, 1, sand::camera_pos); //bottom left corner
-			sand::draw_tile_overlay(0x19, 1, sand::camera_pos + sand::pos(0, 0, 0, 1)); // bottom right vertical
-			sand::draw_tile_overlay(0x18, 1, sand::camera_pos - sand::pos(0, 0, 1, 0)); // bottom right horizontal
-			sand::draw_tile_overlay(0x17, 1, sand::camera_pos); //bottom right corner
+			sand::draw_tile_overlay(0x0E, 1, camera_pos); // top left corner
+			sand::draw_tile_overlay(0x0F, 1, camera_pos + sand::pos(0, 0, 1, 0)); // top left horizontal
+			sand::draw_tile_overlay(0x10, 1, camera_pos - sand::pos(0, 0, 0, 1)); // top left vertical
+			sand::draw_tile_overlay(0x11, 1, camera_pos); // top right corner
+			sand::draw_tile_overlay(0x12, 1, camera_pos - sand::pos(0, 0, 1, 0)); // top right horizontal
+			sand::draw_tile_overlay(0x13, 1, camera_pos - sand::pos(0, 0, 0, 1)); // top right vertical
+			sand::draw_tile_overlay(0x16, 1, camera_pos + sand::pos(0, 0, 0, 1)); // bottom left vertical
+			sand::draw_tile_overlay(0x15, 1, camera_pos + sand::pos(0, 0, 1, 0)); // bottom left horizontal
+			sand::draw_tile_overlay(0x14, 1, camera_pos); //bottom left corner
+			sand::draw_tile_overlay(0x19, 1, camera_pos + sand::pos(0, 0, 0, 1)); // bottom right vertical
+			sand::draw_tile_overlay(0x18, 1, camera_pos - sand::pos(0, 0, 1, 0)); // bottom right horizontal
+			sand::draw_tile_overlay(0x17, 1, camera_pos); //bottom right corner
 		}
 
 		sand::write_text(std::format(
@@ -306,14 +356,12 @@ int main() {
 			"X:    {:X}\n"
 			"Y:    {:X}\n"
 			"x:    {:X}\n"
-			"y:    {:X}\n"
-			"hold: {:X}",
+			"y:    {:X}",
 			sand::tick,
-			static_cast<xte::i64>(sand::camera_pos.chunk_x),
-			static_cast<xte::i64>(sand::camera_pos.chunk_y),
-			sand::camera_pos.tile_x,
-			sand::camera_pos.tile_y,
-			sand::select
+			static_cast<xte::i64>(camera_pos.chunk_x),
+			static_cast<xte::i64>(camera_pos.chunk_y),
+			camera_pos.tile_x,
+			camera_pos.tile_y
 		), 0xFFFFFF, { 0, 0 });
 
 		std::string display;
@@ -356,48 +404,56 @@ int main() {
 				switch (std::fgetc(stdin)) {
 				case '~':
 					return true;
-				case '[':
-				case '1':
-					sand::select = (sand::select - 1 + sand::tiles.size()) % sand::tiles.size();
-					break;
-				case ']':
-				case '2':
-					++sand::select %= sand::tiles.size();
-					break;
 				case '\\':
 				case 'R':
 				case 'r':
-					selected_tile = sand::tiles[sand::select];
+					selected_tile = sand::select;
 					placed = true;
 					break;
 				case '\r':
 				case ' ':
-					{
-						xte::u64 select_copy = sand::select;
-						if (!selected_tile.background || !sand::select) {
-							sand::select = tile_index(selected_tile);
+					if (sand::inventory_open) {
+						sand::select = sand::inventory[sand::select_pos.tile_x][sand::select_pos.tile_y];
+						sand::inventory_open = false;
+					} else {
+						sand::tile select_copy = sand::select;
+						if (!selected_tile.background || (sand::select == sand::tiles[0x00])) {
+							sand::select = selected_tile;
 						} else {
-							sand::select = 0;
+							sand::select = sand::tiles[0x00];
 						}
-						selected_tile = sand::tiles[select_copy];
-						placed = select_copy;
+						selected_tile = select_copy;
+						placed = select_copy != sand::tiles[0x00];
 					}
 					break;
 				case 'D':
 				case 'd':
-					sand::camera_pos.chunk_x += !(++sand::camera_pos.tile_x %= sand::chunk_w);
+					camera_pos += sand::pos(0, 0, 1, 0);
 					break;
 				case 'A':
 				case 'a':
-					sand::camera_pos.chunk_x -= (sand::camera_pos.tile_x = (sand::camera_pos.tile_x - 1 + sand::chunk_w) % sand::chunk_w) == (sand::chunk_w - 1);
+					camera_pos -= sand::pos(0, 0, 1, 0);
 					break;
 				case 'W':
 				case 'w':
-					sand::camera_pos.chunk_y += !(++sand::camera_pos.tile_y %= sand::chunk_h);
+					camera_pos += sand::pos(0, 0, 0, 1);
 					break;
 				case 'S':
 				case 's':
-					sand::camera_pos.chunk_y -= (sand::camera_pos.tile_y = (sand::camera_pos.tile_y - 1 + sand::chunk_h) % sand::chunk_h) == (sand::chunk_h - 1);
+					camera_pos -= sand::pos(0, 0, 0, 1);
+					break;
+				case 'E':
+				case 'e':
+					if (sand::inventory_open) {
+						sand::inventory_open = false;
+					} else {
+						sand::inventory_open = true;
+					}
+					break;
+				case 'Q':
+				case 'q':
+					sand::select = sand::tiles[0x00];
+					sand::inventory_open = false;
 					break;
 				default:
 					while (std::fgetc(stdin) > 0);
@@ -423,13 +479,12 @@ int main() {
 		}
 		std::println(
 			index_file,
-			"{:X} {:X} {:X} {:X} {:X} {:X}",
+			"{:X} {:X} {:X} {:X} {:X}",
 			sand::tick,
 			sand::camera_pos.chunk_x,
 			sand::camera_pos.chunk_y,
 			sand::camera_pos.tile_x,
-			sand::camera_pos.tile_y,
-			sand::select
+			sand::camera_pos.tile_y
 		);
 		for (auto&& [chunk_x, chunks_column] : sand::world) {
 			for (auto&& [chunk_y, chunk] : chunks_column) {
